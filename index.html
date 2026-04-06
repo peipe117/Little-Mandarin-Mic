@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>華語小麥克 - 課文朗讀小助手</title>
+  
+  <!-- 引入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 引入 React 與 ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- 引入 Babel 讓瀏覽器可以直接編譯 JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- 引入 Canvas Confetti 撒花特效 -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    .pt-safe { padding-top: max(1rem, env(safe-area-inset-top)); }
+    .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+    .safe-paddings {
+      padding-top: max(2rem, env(safe-area-inset-top));
+      padding-bottom: max(2rem, env(safe-area-inset-bottom));
+    }
+
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    @keyframes fade-in-up {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up {
+      animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
+    @keyframes fly {
+      0% { transform: scale(1.5) rotate(-15deg) translateY(0px); }
+      100% { transform: scale(1.5) rotate(15deg) translateY(-15px); }
+    }
+    
+    @keyframes flyAwayCenter {
+      0% { transform: scale(1.5) translate(0px, 0px) rotate(0deg); opacity: 1; }
+      20% { transform: scale(4) translate(-80px, 80px) rotate(-15deg); opacity: 1; }
+      40% { transform: scale(7) translate(-200px, 200px) rotate(15deg); opacity: 1; }
+      60% { transform: scale(7) translate(-180px, 150px) rotate(-10deg); opacity: 1; }
+      80% { transform: scale(5) translate(-50px, -150px) rotate(20deg); opacity: 0.8; }
+      100% { transform: scale(3) translate(200px, -600px) rotate(15deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- 圖示元件 ---
+    const IconBase = ({ d, children, className, fill = "none" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        {d && <path d={d} />}
+        {children}
+      </svg>
+    );
+
+    const Mic = (props) => <IconBase className={props.className} fill={props.fill}><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></IconBase>;
+    const Square = (props) => <IconBase className={props.className} fill={props.fill}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></IconBase>;
+    const Play = (props) => <IconBase className={props.className} fill={props.fill}><polygon points="5 3 19 12 5 21 5 3"/></IconBase>;
+    const Star = (props) => <IconBase className={props.className} fill={props.fill}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></IconBase>;
+    const Award = (props) => <IconBase className={props.className} fill={props.fill}><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></IconBase>;
+    const RefreshCw = (props) => <IconBase className={props.className} fill={props.fill}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></IconBase>;
+    const AlertCircle = (props) => <IconBase className={props.className} fill={props.fill}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></IconBase>;
+    const Type = (props) => <IconBase className={props.className} fill={props.fill}><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></IconBase>;
+    const Volume2 = (props) => <IconBase className={props.className} fill={props.fill}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></IconBase>;
+    const Sparkles = (props) => <IconBase className={props.className} fill={props.fill} style={props.style}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></IconBase>;
+    const LinkIcon = (props) => <IconBase className={props.className} fill={props.fill}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></IconBase>;
+    const Check = (props) => <IconBase className={props.className} fill={props.fill}><polyline points="20 6 9 17 4 12"/></IconBase>;
+    const HelpCircle = (props) => <IconBase className={props.className} fill={props.fill}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></IconBase>;
+    const Maximize = (props) => <IconBase className={props.className} fill={props.fill}><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></IconBase>;
+    const Globe = (props) => <IconBase className={props.className} fill={props.fill}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></IconBase>;
+
+    // --- 課程資料 ---
+    const LESSONS = [
+      {
+        id: 'L1', title: '第一課：新同學', titleEn: 'Lesson 1: New Classmates',
+        sentences: [
+          { text: "今天，我們有兩個新同學，現在請他們介紹自己。", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ _ ㄨㄛˇ ㄇㄣ˙ ㄧㄡˇ ㄌㄧㄤˇ ㄍㄜ˙ ㄒㄧㄣ ㄊㄨㄥˊ ㄒㄩㄝˊ _ ㄒㄧㄢˋ ㄗㄞˋ ㄑㄧㄥˇ ㄊㄚ ㄇㄣ˙ ㄐㄧㄝˋ ㄕㄠˋ ㄗˋ ㄐㄧˇ _" },
+          { text: "大家好，我叫方友朋，今年八歲，我最喜歡跟爸爸一起游泳。", zhuyinStr: "ㄉㄚˋ ㄐㄧㄚ ㄏㄠˇ _ ㄨㄛˇ ㄐㄧㄠˋ ㄈㄤ ㄧㄡˇ ㄆㄥˊ _ ㄐㄧㄣ ㄋㄧㄢˊ ㄅㄚ ㄙㄨㄟˋ _ ㄨㄛˇ ㄗㄨㄟˋ ㄒㄧˇ ㄏㄨㄢ ㄍㄣ ㄅㄚˋ ㄅㄚ˙ ㄧˋ ㄑㄧˇ ㄧㄡˊ ㄩㄥˇ _" },
+          { text: "大家好，我叫張莉，今年七歲，我比較喜歡看書。", zhuyinStr: "ㄉㄚˋ ㄐㄧㄚ ㄏㄠˇ _ ㄨㄛˇ ㄐㄧㄠˋ ㄓㄤ ㄌㄧˋ _ ㄐㄧㄣ ㄋㄧㄢˊ ㄑㄧ ㄙㄨㄟˋ _ ㄨㄛˇ ㄅㄧˇ ㄐㄧㄠˋ ㄒㄧˇ ㄏㄨㄢ ㄎㄢˋ ㄕㄨ _" },
+          { text: "你們好，我叫李大文。很高興認識你們。", zhuyinStr: "ㄋㄧˇ ㄇㄣ˙ ㄏㄠˇ _ ㄨㄛˇ ㄐㄧㄠˋ ㄌㄧˇ ㄉㄚˋ ㄨㄣˊ _ ㄏㄣˇ ㄍㄠ ㄒㄧㄥˋ ㄖㄣˋ ㄕ˙ ㄋㄧˇ ㄇㄣ˙ _" },
+          { text: "歡迎你們來中文學校學華語。", zhuyinStr: "ㄏㄨㄢ ㄧㄥˊ ㄋㄧˇ ㄇㄣ˙ ㄌㄞˊ ㄓㄨㄥ ㄨㄣˊ ㄒㄩㄝˊ ㄒㄧㄠˋ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      },
+      {
+        id: 'L2', title: '第二課：我爸爸做生意', titleEn: 'Lesson 2: My Dad Does Business',
+        sentences: [
+          { text: "張莉，照片裡面的人是誰？", zhuyinStr: "ㄓㄤ ㄌㄧˋ _ ㄓㄠˋ ㄆㄧㄢˋ ㄌㄧˇ ㄇㄧㄢˋ ㄉㄜ˙ ㄖㄣˊ ㄕˋ ㄕㄟˊ _" },
+          { text: "左邊是我外公，他以前是醫生，右邊是我外婆。", zhuyinStr: "ㄗㄨㄛˇ ㄅㄧㄢ ㄕˋ ㄨㄛˇ ㄨㄞˋ ㄍㄨㄥ _ ㄊㄚ ㄧˇ ㄑㄧㄢˊ ㄕˋ ㄧ ㄕㄥ _ ㄧㄡˋ ㄅㄧㄢ ㄕˋ ㄨㄛˇ ㄨㄞˋ ㄆㄛˊ _" },
+          { text: "你爸爸媽媽做什麼工作？", zhuyinStr: "ㄋㄧˇ ㄅㄚˋ ㄅㄚ˙ ㄇㄚ ㄇㄚ˙ ㄗㄨㄛˋ ㄕㄣˊ ㄇㄜ˙ ㄍㄨㄥ ㄗㄨㄛˋ _" },
+          { text: "我爸爸做生意，我媽媽幫他。你爸爸媽媽呢？", zhuyinStr: "ㄨㄛˇ ㄅㄚˋ ㄅㄚ˙ ㄗㄨㄛˋ ㄕㄥ ㄧˋ _ ㄨㄛˇ ㄇㄚ ㄇㄚ˙ ㄅㄤ ㄊㄚ _ ㄋㄧˇ ㄅㄚˋ ㄅㄚ˙ ㄇㄚ ㄇㄚ˙ ㄋㄜ˙ _" },
+          { text: "我爸爸在電腦公司上班，我媽媽在銀行工作。", zhuyinStr: "ㄨㄛˇ ㄅㄚˋ ㄅㄚ˙ ㄗㄞˋ ㄉㄧㄢˋ ㄋㄠˇ ㄍㄨㄥ ㄙ ㄕㄤˋ ㄅㄢ _ ㄨㄛˇ ㄇㄚ ㄇㄚ˙ ㄗㄞˋ ㄧㄣˊ ㄏㄤˊ ㄍㄨㄥ ㄗㄨㄛˋ _" },
+          { text: "你以後想做什麼？", zhuyinStr: "ㄋㄧˇ ㄧˇ ㄏㄡˋ ㄒㄧㄤˇ ㄗㄨㄛˋ ㄕㄣˊ ㄇㄜ˙ _" },
+          { text: "我以後想跟爸爸一樣。", zhuyinStr: "ㄨㄛˇ ㄧˇ ㄏㄡˋ ㄒㄧㄤˇ ㄍㄣ ㄅㄚˋ ㄅㄚ˙ ㄧˊ ㄧㄤˋ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      },
+      {
+        id: 'L3', title: '第三課：去超級市場', titleEn: 'Lesson 3: Going to the Supermarket',
+        sentences: [
+          { text: "媽媽，你要去哪裡？", zhuyinStr: "ㄇㄚ ㄇㄚ˙ _ ㄋㄧˇ ㄧㄠˋ ㄑㄩˋ ㄋㄚˇ ㄌㄧˇ _" },
+          { text: "我要去附近的超級市場買東西，你要跟我一起去嗎？", zhuyinStr: "ㄨㄛˇ ㄧㄠˋ ㄑㄩˋ ㄈㄨˋ ㄐㄧㄣˋ ㄉㄜ˙ ㄔㄠ ㄐㄧˊ ㄕˋ ㄔㄤˇ ㄇㄞˇ ㄉㄨㄥ ㄒㄧ _ ㄋㄧˇ ㄧㄠˋ ㄍㄣ ㄨㄛˇ ㄧˋ ㄑㄧˇ ㄑㄩˋ ㄇㄚ˙ _" },
+          { text: "要，我想去買巧克力冰淇淋。", zhuyinStr: "ㄧㄠˋ _ ㄨㄛˇ ㄒㄧㄤˇ ㄑㄩˋ ㄇㄞˇ ㄑㄧㄠˇ ㄎㄜˋ ㄌㄧˋ ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ _" },
+          { text: "你今天要買什麼？", zhuyinStr: "ㄋㄧˇ ㄐㄧㄣ ㄊㄧㄢ ㄧㄠˋ ㄇㄞˇ ㄕㄣˊ ㄇㄜ˙ _" },
+          { text: "我今天要買魚、牛肉、青菜，還要買米。", zhuyinStr: "ㄨㄛˇ ㄐㄧㄣ ㄊㄧㄢ ㄧㄠˋ ㄇㄞˇ ㄩˊ _ ㄋㄧㄡˊ ㄖㄡˋ _ ㄑㄧㄥ ㄘㄞˋ _ ㄏㄞˊ ㄧㄠˋ ㄇㄞˇ ㄇㄧˇ _" },
+          { text: "我也可以買糖果嗎？", zhuyinStr: "ㄨㄛˇ ㄧㄝˇ ㄎㄜˇ ㄧˇ ㄇㄞˇ ㄊㄤˊ ㄍㄨㄛˇ ㄇㄚ˙ _" },
+          { text: "我們去看一下吧！", zhuyinStr: "ㄨㄛˇ ㄇㄣ˙ ㄑㄩˋ ㄎㄢˋ ㄧˊ ㄒㄧㄚˋ ㄅㄚ˙ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      },
+      {
+        id: 'L4', title: '第四課：我想吃漢堡', titleEn: 'Lesson 4: I Want a Hamburger',
+        sentences: [
+          { text: "我想吃漢堡跟薯條，我們可不可以出去吃？", zhuyinStr: "ㄨㄛˇ ㄒㄧㄤˇ ㄔ ㄏㄢˋ ㄅㄠˇ ㄍㄣ ㄕㄨˇ ㄊㄧㄠˊ _ ㄨㄛˇ ㄇㄣ˙ ㄎㄜˇ ㄅㄨˋ ㄎㄜˇ ㄧˇ ㄔㄨ ㄑㄩˋ ㄔ _" },
+          { text: "今天先在家吃，週末再出去吃吧！", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ ㄒㄧㄢ ㄗㄞˋ ㄐㄧㄚ ㄔ _ ㄓㄡ ㄇㄛˋ ㄗㄞˋ ㄔㄨ ㄑㄩˋ ㄔ ㄅㄚ˙ _" },
+          { text: "今天晚餐想吃什麼？", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ ㄨㄢˇ ㄘㄢ ㄒㄧㄤˇ ㄔ ㄕㄣˊ ㄇㄜ˙ _" },
+          { text: "我想吃麵。文文，你呢？", zhuyinStr: "ㄨㄛˇ ㄒㄧㄤˇ ㄔ ㄇㄧㄢˋ _ ㄨㄣˊ ㄨㄣˊ _ ㄋㄧˇ ㄋㄜ˙ _" },
+          { text: "我想吃蛋炒飯，有湯嗎？", zhuyinStr: "ㄨㄛˇ ㄒㄧㄤˇ ㄔ ㄉㄢˋ ㄔㄠˇ ㄈㄢˋ _ ㄧㄡˇ ㄊㄤ ㄇㄚ˙ _" },
+          { text: "我已經做了玉米湯。", zhuyinStr: "ㄨㄛˇ ㄧˇ ㄐㄧㄥ ㄗㄨㄛˋ ㄌㄜ˙ ㄩˋ ㄇㄧˇ ㄊㄤ _" },
+          { text: "媽，我現在很餓，想快點吃晚飯，好嗎？", zhuyinStr: "ㄇㄚ _ ㄨㄛˇ ㄒㄧㄢˋ ㄗㄞˋ ㄏㄣˇ ㄜˋ _ ㄒㄧㄤˇ ㄎㄨㄞˋ ㄉㄧㄢˇ ㄔ ㄨㄢˇ ㄈㄢˋ _ ㄏㄠˇ ㄇㄚ˙ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      },
+      {
+        id: 'L5', title: '第五課：春天快到了', titleEn: 'Lesson 5: Spring is Coming',
+        sentences: [
+          { text: "你看！樹葉變黃了，秋天快到了。", zhuyinStr: "ㄋㄧˇ ㄎㄢˋ _ ㄕㄨˋ ㄧㄝˋ ㄅㄧㄢˋ ㄏㄨㄤˊ ㄌㄜ˙ _ ㄑㄧㄡ ㄊㄧㄢ ㄎㄨㄞˋ ㄉㄠˋ ㄌㄜ˙ _" },
+          { text: "可是草還是綠色的。", zhuyinStr: "ㄎㄜˇ ㄕˋ ㄘㄠˇ ㄏㄞˊ ㄕˋ ㄌㄩˋ ㄙㄜˋ ㄉㄜ˙ _" },
+          { text: "秋天天氣很好，我覺得很舒服。", zhuyinStr: "ㄑㄧㄡ ㄊㄧㄢ ㄊㄧㄢ ㄑㄧˋ ㄏㄣˇ ㄏㄠˇ _ ㄨㄛˇ ㄐㄩㄝˊ ㄉㄜ˙ ㄏㄣˇ ㄕㄨ ㄈㄨˊ _" },
+          { text: "春天也不錯。", zhuyinStr: "ㄔㄨㄣ ㄊㄧㄢ ㄧㄝˇ ㄅㄨˊ ㄘㄨㄛˋ _" },
+          { text: "春天的時候，我們家院子有很多顏色的花。", zhuyinStr: "ㄔㄨㄣ ㄊㄧㄢ ㄉㄜ˙ ㄕˊ ㄏㄡˋ _ ㄨㄛˇ ㄇㄣ˙ ㄐㄧㄚ ㄩㄢˋ ㄗ˙ ㄧㄡˇ ㄏㄣˇ ㄉㄨㄛ ㄧㄢˊ ㄙㄜˋ ㄉㄜ˙ ㄏㄨㄚ _" },
+          { text: "紅色的、白色的都有。", zhuyinStr: "ㄏㄨㄥˊ ㄙㄜˋ ㄉㄜ˙ _ ㄅㄞˊ ㄙㄜˋ ㄉㄜ˙ ㄉㄡ ㄧㄡˇ _" },
+          { text: "我覺得紅色的花最漂亮。", zhuyinStr: "ㄨㄛˇ ㄐㄩㄝˊ ㄉㄜ˙ ㄏㄨㄥˊ ㄙㄜˋ ㄉㄜ˙ ㄏㄨㄚ ㄗㄨㄟˋ ㄆㄧㄠˋ ㄌㄧㄤˋ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      },
+      {
+        id: 'L6', title: '第六課：農曆新年', titleEn: 'Lesson 6: Lunar New Year',
+        sentences: [
+          { text: "老師說農曆新年快到了。", zhuyinStr: "ㄌㄠˇ ㄕ ㄕㄨㄛ ㄋㄨㄥˊ ㄌㄧˋ ㄒㄧㄣ ㄋㄧㄢˊ ㄎㄨㄞˋ ㄉㄠˋ ㄌㄜ˙ _" },
+          { text: "對，下個星期五是農曆新年。", zhuyinStr: "ㄉㄨㄟˋ _ ㄒㄧㄚˋ ㄍㄜ˙ ㄒㄧㄥ ㄑㄧ ㄨˇ ㄕˋ ㄋㄨㄥˊ ㄌㄧˋ ㄒㄧㄣ ㄋㄧㄢˊ _" },
+          { text: "媽媽會去華人超市買年糕嗎？", zhuyinStr: "ㄇㄚ ㄇㄚ˙ ㄏㄨㄟˋ ㄑㄩˋ ㄏㄨㄚˊ ㄖㄣˊ ㄔㄠ ㄕˋ ㄇㄞˇ ㄋㄧㄢˊ ㄍㄠ ㄇㄚ˙ _" },
+          { text: "會，那天我們還要給爺爺奶奶拜年。", zhuyinStr: "ㄏㄨㄟˋ _ ㄋㄚˋ ㄊㄧㄢ ㄨㄛˇ ㄇㄣ˙ ㄏㄞˊ ㄧㄠˋ ㄍㄟˇ ㄧㄝˊ ㄧㄝ˙ ㄋㄞˇ ㄋㄞ˙ ㄅㄞˋ ㄋㄧㄢˊ _" },
+          { text: "太好了，爺爺每年都會給我紅包。", zhuyinStr: "ㄊㄞˋ ㄏㄠˇ ㄌㄜ˙ _ ㄧㄝˊ ㄧㄝ˙ ㄇㄟˇ ㄋㄧㄢˊ ㄉㄡ ㄏㄨㄟˋ ㄍㄟˇ ㄨㄛˇ ㄏㄨㄥˊ ㄅㄠ _" },
+          { text: "如果在臺灣，我們還會貼春聯、放鞭炮。", zhuyinStr: "ㄖㄨˊ ㄍㄨㄛˇ ㄗㄞˋ ㄊㄞˊ ㄨㄢ _ ㄨㄛˇ ㄇㄣ˙ ㄏㄞˊ ㄏㄨㄟˋ ㄊㄧㄝ ㄔㄨㄣ ㄌㄧㄢˊ _ ㄈㄤˋ ㄅㄧㄢ ㄆㄠˋ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      },
+      {
+        id: 'L7', title: '第七課：早一點睡覺', titleEn: 'Lesson 7: Go to Sleep Earlier',
+        sentences: [
+          { text: "大文，該起床了！來不及了！", zhuyinStr: "ㄉㄚˋ ㄨㄣˊ _ ㄍㄞ ㄑㄧˇ ㄔㄨㄤˊ ㄌㄜ˙ _ ㄌㄞˊ ㄅㄨˋ ㄐㄧˊ ㄌㄜ˙ _" },
+          { text: "我很累，還想睡覺。", zhuyinStr: "ㄨㄛˇ ㄏㄣˇ ㄌㄟˋ _ ㄏㄞˊ ㄒㄧㄤˇ ㄕㄨㄟˋ ㄐㄧㄠˋ _" },
+          { text: "今天晚上早一點睡，現在趕快去刷牙、洗澡。", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ ㄨㄢˇ ㄕㄤˋ ㄗㄠˇ ㄧˋ ㄉㄧㄢˇ ㄕㄨㄟˋ _ ㄒㄧㄢˋ ㄗㄞˋ ㄍㄢˇ ㄎㄨㄞˋ ㄑㄩˋ ㄕㄨㄚ ㄧㄚˊ _ ㄒㄧˇ ㄗㄠˇ _" },
+          { text: "我昨天晚上洗過澡了。", zhuyinStr: "ㄨㄛˇ ㄗㄨㄛˊ ㄊㄧㄢ ㄨㄢˇ ㄕㄤˋ ㄒㄧˇ ㄍㄨㄛˋ ㄗㄠˇ ㄌㄜ˙ _" },
+          { text: "還有，別忘了用肥皂洗臉。", zhuyinStr: "ㄏㄞˊ ㄧㄡˇ _ ㄅㄧㄝˊ ㄨㄤˋ ㄌㄜ˙ ㄩㄥˋ ㄈㄟˊ ㄗㄠˋ ㄒㄧˇ ㄌㄧㄢˇ _" },
+          { text: "我知道了，要洗乾淨。", zhuyinStr: "ㄨㄛˇ ㄓ ㄉㄠˋ ㄌㄜ˙ _ ㄧㄠˋ ㄒㄧˇ ㄍㄢ ㄐㄧㄥˋ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      },
+      {
+        id: 'L8', title: '第八課：我的寵物', titleEn: 'Lesson 8: My Pet',
+        sentences: [
+          { text: "昨天我爸爸的朋友送給我一隻狗，你們家有寵物嗎？", zhuyinStr: "ㄗㄨㄛˊ ㄊㄧㄢ ㄨㄛˇ ㄅㄚˋ ㄅㄚ˙ ㄉㄜ˙ ㄆㄥˊ ㄧㄡˇ ㄙㄨㄥˋ ㄍㄟˇ ㄨㄛˇ ㄧˋ ㄓ ㄍㄡˇ _ ㄋㄧˇ ㄇㄣ˙ ㄐㄧㄚ ㄧㄡˇ ㄔㄨㄥˇ ㄨˋ ㄇㄚ˙ _" },
+          { text: "有，我家有兩隻狗，我每天都帶牠們去散步。", zhuyinStr: "ㄧㄡˇ _ ㄨㄛˇ ㄐㄧㄚ ㄧㄡˇ ㄌㄧㄤˇ ㄓ ㄍㄡˇ _ ㄨㄛˇ ㄇㄟˇ ㄊㄧㄢ ㄉㄡ ㄉㄞˋ ㄊㄚ ㄇㄣ˙ ㄑㄩˋ ㄙㄢˋ ㄅㄨˋ _" },
+          { text: "張莉，你養過狗嗎？", zhuyinStr: "ㄓㄤ ㄌㄧˋ _ ㄋㄧˇ ㄧㄤˇ ㄍㄨㄛˋ ㄍㄡˇ ㄇㄚ˙ _" },
+          { text: "我沒養過狗，我去年養了一隻貓，可是上個月不見了。", zhuyinStr: "ㄨㄛˇ ㄇㄟˊ ㄧㄤˇ ㄍㄨㄛˋ ㄍㄡˇ _ ㄨㄛˇ ㄑㄩˋ ㄋㄧㄢˊ ㄧㄤˇ ㄌㄜ˙ ㄧˋ ㄓ ㄇㄠ _ ㄎㄜˇ ㄕˋ ㄕㄤˋ ㄍㄜ˙ ㄩㄝˋ ㄅㄨˊ ㄐㄧㄢˋ ㄌㄜ˙ _" },
+          { text: "我也養過貓，非常可愛，我每天都餵牠。", zhuyinStr: "ㄨㄛˇ ㄧㄝˇ ㄧㄤˇ ㄍㄨㄛˋ ㄇㄠ _ ㄈㄟ ㄔㄤˊ ㄎㄜˇ ㄞˋ _ ㄨㄛˇ ㄇㄟˇ ㄊㄧㄢ ㄉㄡ ㄨㄟˋ ㄊㄚ _" },
+          { text: "以後我想養一隻兔子。", zhuyinStr: "ㄧˇ ㄏㄡˋ ㄨㄛˇ ㄒㄧㄤˇ ㄧㄤˇ ㄧˋ ㄓ ㄊㄨˋ ㄗ˙ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      },
+      {
+        id: 'L9', title: '第九課：音樂教室在北方', titleEn: 'Lesson 9: Music Room is in the North',
+        sentences: [
+          { text: "東明，這是什麼？", zhuyinStr: "ㄉㄨㄥ ㄇㄧㄥˊ _ ㄓㄜˋ ㄕˋ ㄕㄣˊ ㄇㄜ˙ _" },
+          { text: "指南針，也叫指北針，它告訴我們南方和北方在哪裡。", zhuyinStr: "ㄓˇ ㄋㄢˊ ㄓㄣ _ ㄧㄝˇ ㄐㄧㄠˋ ㄓˇ ㄅㄟˇ ㄓㄣ _ ㄊㄚ ㄍㄠˋ ㄙㄨˋ ㄨㄛˇ ㄇㄣ˙ ㄋㄢˊ ㄈㄤ ㄏㄢˋ ㄅㄟˇ ㄈㄤ ㄗㄞˋ ㄋㄚˇ ㄌㄧˇ _" },
+          { text: "音樂教室是什麼方向？", zhuyinStr: "ㄧㄣ ㄩㄝˋ ㄐㄧㄠˋ ㄕˋ ㄕˋ ㄕㄣˊ ㄇㄜ˙ ㄈㄤ ㄒㄧㄤˋ _" },
+          { text: "音樂教室在北方，校門口在南方。", zhuyinStr: "ㄧㄣ ㄩㄝˋ ㄐㄧㄠˋ ㄕˋ ㄗㄞˋ ㄅㄟˇ ㄈㄤ _ ㄒㄧㄠˋ ㄇㄣˊ ㄎㄡˇ ㄗㄞˋ ㄋㄢˊ ㄈㄤ _" },
+          { text: "足球場在東方，還是西方？", zhuyinStr: "ㄗㄨˊ ㄑㄧㄡˊ ㄔㄤˇ ㄗㄞˋ ㄉㄨㄥ ㄈㄤ _ ㄏㄞˊ ㄕˋ ㄒㄧ ㄈㄤ _" },
+          { text: "因為音樂教室在北方，所以足球場在東方。", zhuyinStr: "ㄧㄣ ㄨㄟˋ ㄧㄣ ㄩㄝˋ ㄐㄧㄠˋ ㄕˋ ㄗㄞˋ ㄅㄟˇ ㄈㄤ _ ㄙㄨㄛˇ ㄧˇ ㄗㄨˊ ㄑㄧㄡˊ ㄔㄤˇ ㄗㄞˋ ㄉㄨㄥ ㄈㄤ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      },
+      {
+        id: 'L10', title: '第十課：外公外婆住在臺灣', titleEn: 'Lesson 10: Grandparents Live in Taiwan',
+        sentences: [
+          { text: "暑假的時候，我會去臺灣看外公、外婆。", zhuyinStr: "ㄕㄨˇ ㄐㄧㄚˋ ㄉㄜ˙ ㄕˊ ㄏㄡˋ _ ㄨㄛˇ ㄏㄨㄟˋ ㄑㄩˋ ㄊㄞˊ ㄨㄢ ㄎㄢˋ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ _" },
+          { text: "你外公、外婆家在哪裡？", zhuyinStr: "ㄋㄧˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄐㄧㄚ ㄗㄞˋ ㄋㄚˇ ㄌㄧˇ _" },
+          { text: "他們本來住在臺北，退休以後，跟我的舅舅住在臺南。", zhuyinStr: "ㄊㄚ ㄇㄣ˙ ㄅㄣˇ ㄌㄞˊ ㄓㄨˋ ㄗㄞˋ ㄊㄞˊ ㄅㄟˇ _ ㄊㄨㄟˋ ㄒㄧㄡ ㄧˇ ㄏㄡˋ _ ㄍㄣ ㄨㄛˇ ㄉㄜ˙ ㄐㄧㄡˋ ㄐㄧㄡ˙ ㄓㄨˋ ㄗㄞˋ ㄊㄞˊ ㄋㄢˊ _" },
+          { text: "你們每年都去看外公、外婆嗎？", zhuyinStr: "ㄋㄧˇ ㄇㄣ˙ ㄇㄟˇ ㄋㄧㄢˊ ㄉㄡ ㄑㄩˋ ㄎㄢˋ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄇㄚ˙ _" },
+          { text: "我們每年都去看他們一次，你外公、外婆住在哪裡？", zhuyinStr: "ㄨㄛˇ ㄇㄣ˙ ㄇㄟˇ ㄋㄧㄢˊ ㄉㄡ ㄑㄩˋ ㄎㄢˋ ㄊㄚ ㄇㄣ˙ ㄧˊ ㄘˋ _ ㄋㄧˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄓㄨˋ ㄗㄞˋ ㄋㄚˇ ㄌㄧˇ _" },
+          { text: "我外公、外婆現在住在紐約，他們下個月會來看我們。", zhuyinStr: "ㄨㄛˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄒㄧㄢˋ ㄗㄞˋ ㄓㄨˋ ㄗㄞˋ ㄋㄧㄡˇ ㄩㄝ _ ㄊㄚ ㄇㄣ˙ ㄒㄧㄚˋ ㄍㄜ˙ ㄩㄝˋ ㄏㄨㄟˋ ㄌㄞˋ ㄎㄢˋ ㄨㄛˇ ㄇㄣ˙ _" },
+          { text: "我外公、外婆喜歡旅行，常常來看我們，也常去法國看阿姨。", zhuyinStr: "ㄨㄛˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄒㄧˇ ㄏㄨㄢ ㄌㄩˇ ㄒㄧㄥˊ _ ㄔㄤˊ ㄔㄤˊ ㄌㄞˋ ㄎㄢˋ ㄨㄛˇ ㄇㄣ˙ _ ㄧㄝˇ ㄔㄤˊ ㄑㄩˋ ㄈㄚˇ ㄍㄨㄛˊ ㄎㄢˋ ㄚ ㄧˊ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      },
+      {
+        id: 'L11', title: '第十一課：去動物園', titleEn: 'Lesson 11: Going to the Zoo',
+        sentences: [
+          { text: "下個星期五，學校要帶我們去動物園玩。", zhuyinStr: "ㄒㄧㄚˋ ㄍㄜ˙ ㄒㄧㄥ ㄑㄧ ㄨˇ _ ㄒㄩㄝˊ ㄒㄧㄠˋ ㄧㄠˋ ㄉㄞˋ ㄨㄛˇ ㄇㄣ˙ ㄑㄩˋ ㄉㄨㄥˋ ㄨˋ ㄩㄢˊ ㄨㄢˊ _" },
+          { text: "太好了！你可以看到你喜歡的大象和老虎。", zhuyinStr: "ㄊㄞˋ ㄏㄠˇ ㄌㄜ˙ _ ㄋㄧˇ ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄋㄧˇ ㄒㄧˇ ㄏㄨㄢ ㄉㄜ˙ ㄉㄚˋ ㄒㄧㄤˋ ㄏㄢˋ ㄌㄠˇ ㄏㄨˇ _" },
+          { text: "這一次我希望可以看到熊貓和猴子。", zhuyinStr: "ㄓㄜˋ ㄧˊ ㄘˋ ㄨㄛˇ ㄒㄧ ㄨㄤˋ ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄒㄩㄥˊ ㄇㄠ ㄏㄢˋ ㄏㄡˊ ㄗ˙ _" },
+          { text: "對，以前我去的時候，動物園沒有熊貓。", zhuyinStr: "ㄉㄨㄟˋ _ ㄧˇ ㄑㄧㄢˊ ㄨㄛˇ ㄑㄩˋ ㄉㄜ˙ ㄕˊ ㄏㄡˋ _ ㄉㄨㄥˋ ㄨˋ ㄩㄢˊ ㄇㄟˊ ㄧㄡˇ ㄒㄩㄥˊ ㄇㄠ _" },
+          { text: "現在不但有熊貓，還有企鵝。", zhuyinStr: "ㄒㄧㄢˋ ㄗㄞˋ ㄅㄨˊ ㄉㄢˋ ㄧㄡˇ ㄒㄩㄥˊ ㄇㄠ _ ㄏㄞˊ ㄧㄡˇ ㄑㄧˋ ㄜˊ _" },
+          { text: "我覺得熊貓胖胖的，真可愛！", zhuyinStr: "ㄨㄛˇ ㄐㄩㄝˊ ㄉㄜ˙ ㄒㄩㄥˊ ㄇㄠ ㄆㄤˋ ㄆㄤˋ ㄉㄜ˙ _ ㄓㄣ ㄎㄜˇ ㄞˋ _" },
+          { text: "我喜歡長頸鹿，脖子長長的。", zhuyinStr: "ㄨㄛˇ ㄒㄧˇ ㄏㄨㄢ ㄔㄤˊ ㄐㄧㄥˇ ㄌㄨˋ _ ㄅㄛˊ ㄗ˙ ㄔㄤˊ ㄔㄤˊ ㄉㄜ˙ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      },
+      {
+        id: 'L12', title: '第十二課：打網路電話', titleEn: 'Lesson 12: Making an Internet Call',
+        sentences: [
+          { text: "大文，我現在要用網路給姑姑打電話。", zhuyinStr: "ㄉㄚˋ ㄨㄣˊ _ ㄨㄛˇ ㄒㄧㄢˋ ㄗㄞˋ ㄧㄠˋ ㄩㄥˋ ㄨㄤˇ ㄌㄨˋ ㄍㄟˇ ㄍㄨ ㄍㄨ ㄉㄚˇ ㄉㄧㄢˋ ㄏㄨㄚˋ _" },
+          { text: "可以看到姑姑嗎？我很久沒跟姑姑說話了。", zhuyinStr: "ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄍㄨ ㄍㄨ ㄇㄚ˙ _ ㄨㄛˇ ㄏㄣˇ ㄐㄧㄡˇ ㄇㄟˊ ㄍㄣ ㄍㄨ ㄍㄨ ㄕㄨㄛ ㄏㄨㄚˋ ㄌㄜ˙ _" },
+          { text: "可以看到她的影像，快一點過來。", zhuyinStr: "ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄊㄚ ㄉㄜ˙ ㄧㄥˇ ㄒㄧㄤˋ _ ㄎㄨㄞˋ ㄧˋ ㄉㄧㄢˋ ㄍㄨㄛˋ ㄌㄞˊ _" },
+          { text: "大文，你看起來瘦了。", zhuyinStr: "ㄉㄚˋ ㄨㄣˊ _ ㄋㄧˇ ㄎㄢˋ ㄑㄧˇ ㄌㄞˊ ㄕㄡˋ ㄌㄜ˙ _" },
+          { text: "我沒瘦，我長高了。", zhuyinStr: "ㄨㄛˇ ㄇㄟˊ ㄕㄡˋ _ ㄨㄛˇ ㄓㄤˇ ㄍㄠ ㄌㄜ˙ _" },
+          { text: "文文現在也跟你一起去學華語嗎？", zhuyinStr: "ㄨㄣˊ ㄨㄣˊ ㄒㄧㄢˋ ㄗㄞˋ ㄧㄝˇ ㄍㄣ ㄋㄧˇ ㄧˋ ㄑㄧˇ ㄑㄩˋ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ ㄇㄚ˙ _" },
+          { text: "是啊！上華語課很有意思。", zhuyinStr: "ㄕˋ ㄚ _ ㄕㄤˋ ㄏㄨㄚˊ ㄩˇ ㄎㄜˋ ㄏㄣˇ ㄧㄡˇ ㄧˋ ㄙ˙ _" },
+          { text: "你好好學華語，以後可以用網路給我寫信。", zhuyinStr: "ㄋㄧˇ ㄏㄠˇ ㄏㄠˇ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ _ ㄧˇ ㄏㄡˋ ㄎㄜˇ ㄧˇ ㄩㄥˋ ㄨㄤˇ ㄌㄨˋ ㄍㄟˇ ㄨㄛˇ ㄒㄧㄝˇ ㄒㄧㄣˋ _" },
+          { text: "沒問題，我一定會好好學華語。", zhuyinStr: "ㄇㄟˊ ㄨㄣˋ ㄊㄧˊ _ ㄨㄛˇ ㄧˊ ㄉㄧㄥˋ ㄏㄨㄟˋ ㄏㄠˇ ㄏㄠˇ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ _" }
+        ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') }))
+      }
+    ];
+
+    // --- 翻譯字典 ---
+    const TRANSLATIONS = {
+      zh: {
+        appTitle: "華語小麥克",
+        appSubtitle: "《學華語向前走》",
+        tipsTitle: "闖關小秘訣",
+        tip1: "點擊麥克風，大聲朗讀句子",
+        tip2: "發音越標準，收集越多星星",
+        tip3: "完成全課，幫毛毛蟲變蝴蝶",
+        enterName: "請輸入你的名字：",
+        placeholderName: "小毛蟲",
+        startBtn: "開始闖關！",
+        readingChallenge: "的朗讀挑戰",
+        littleCaterpillar: "小毛蟲",
+        fullscreen: "全螢幕",
+        showZhuyin: "顯示注音",
+        hideZhuyin: "隱藏注音",
+        zhuyinMobile: "注音",
+        hideMobile: "隱藏",
+        copyLink: "複製網址",
+        copied: "已複製！",
+        progress: "好餓的毛毛蟲闖關進度：",
+        readAloud: "請大聲唸出這句話",
+        clickToHear: "(💡 點擊單字可以聽發音喔！)",
+        listenExample: "聽整句示範",
+        teacherHelp: "老師幫幫我",
+        clickMicToStart: "點擊麥克風開始朗讀",
+        listening: "正在聽你說... (點擊停止)",
+        micHeard: "小麥克聽到了",
+        perfect: "太棒了！完全正確！ 🎉",
+        good: "很好喔！再試一次會更完美！ 👍",
+        tryAgainMsg: "加油！老師陪你再唸一次！ 💪",
+        tryAgainBtn: "再試一次",
+        nextSentence: "下一句",
+        finishLevel: "完成闖關",
+        successTitle: "闖關大成功！",
+        congrats: "恭喜",
+        completed: "順利完成了",
+        collectedStars: "總共收集了 {n} 顆星星！",
+        tryAnother: "挑戰其他關卡",
+        errMicPermission: "請允許瀏覽器使用麥克風喔！",
+        errNoSpeech: "小麥克沒有聽到聲音喔，請再大聲唸一次！",
+        errNoMic: "找不到麥克風設備，請檢查一下喔！",
+        errMicError: "哎呀，麥克風發生了一點問題 ({error})，請重試！",
+        errStartMic: "啟動麥克風失敗，請稍微等一下再試！",
+        errNoSupport: "抱歉！您的瀏覽器不支援語音辨識，請使用 Google Chrome。",
+        errCopy: "複製失敗，請手動複製上方網址列！",
+        errDemoSpeech: "抱歉，您的瀏覽器不支援語音示範功能喔！",
+        teacherPassed: "（老師幫忙過關）"
+      },
+      en: {
+        appTitle: "Little Mandarin Mic",
+        appSubtitle: "Let's Learn Mandarin",
+        tipsTitle: "Quick Tips",
+        tip1: "Click the mic & read aloud",
+        tip2: "Better pronunciation = more stars",
+        tip3: "Finish lesson to become a butterfly",
+        enterName: "Please enter your name:",
+        placeholderName: "Caterpillar",
+        startBtn: "Start Challenge!",
+        readingChallenge: "'s Reading Challenge",
+        littleCaterpillar: "Little",
+        fullscreen: "Fullscreen",
+        showZhuyin: "Show Zhuyin",
+        hideZhuyin: "Hide Zhuyin",
+        zhuyinMobile: "Zhuyin",
+        hideMobile: "Hide",
+        copyLink: "Copy Link",
+        copied: "Copied!",
+        progress: "Hungry Caterpillar's Progress:",
+        readAloud: "Please read this sentence aloud",
+        clickToHear: "(💡 Click a word to hear it!)",
+        listenExample: "Listen to Example",
+        teacherHelp: "Teacher, Help Me",
+        clickMicToStart: "Click mic to start reading",
+        listening: "Listening... (Click to stop)",
+        micHeard: "Little Mic heard:",
+        perfect: "Excellent! Perfect! 🎉",
+        good: "Good job! Try again for perfection! 👍",
+        tryAgainMsg: "Keep going! Let's try once more! 💪",
+        tryAgainBtn: "Try Again",
+        nextSentence: "Next Sentence",
+        finishLevel: "Finish Level",
+        successTitle: "Challenge Completed!",
+        congrats: "Congratulations",
+        completed: "successfully completed",
+        collectedStars: "Collected {n} stars in total!",
+        tryAnother: "Try Another Level",
+        errMicPermission: "Please allow microphone access!",
+        errNoSpeech: "Didn't hear anything, please read louder!",
+        errNoMic: "No microphone found, please check your device!",
+        errMicError: "Oops, microphone error ({error}), please try again!",
+        errStartMic: "Failed to start microphone, please wait and try again!",
+        errNoSupport: "Sorry! Your browser does not support speech recognition. Please use Google Chrome.",
+        errCopy: "Copy failed, please copy the URL manually!",
+        errDemoSpeech: "Sorry, your browser does not support text-to-speech!",
+        teacherPassed: "(Teacher helped to pass)"
+      }
+    };
+
+    const removePunctuation = (text) => {
+      return text.replace(/[，。、！？；：「」『』\s]/g, '');
+    };
+
+    const simplifyToTraditional = (text) => {
+      const simp = "万与丑专业丛东丝丢两严丧个丰临为丽举么义乌乐乔习乡书买乱争于亏云亚产亩亲亿仅从仓仪们价众优伙会伞伟传伤伦伪体余佣侠侦侧侨侩侪侬俩俪俭债倾储儿兑党兰关兴兹养兽内冈册写军农冬决况冻净凄凉减凑几击划则刚创删别刮到剂剃削前剐剑剧剩剪副割力劝办功加务动助努劫励劲劳势勇勉勋勒勤勺勾勿匀包匆匈化北区医卅升半华协卑单卖南博卜卢卤卧卫却卵卷卸厂厅历厉压厌厕厢厦厨厩发变鸡饱附超级巧克力冰淇淋糖果餐蛋炒累赶快洗澡肥皂昨友散步养丢向希望这来说对没觉得样欢迎学校语帮网络点长瘦车门开关动物园玩见看里边电脑认识诉谁条吗饭汤树叶黄绿色红白农历华糕爷奶台湾贴春联放鞭炮起床睡觉晚刷脸干净宠狗猫兔喂南北东西针教室足场暑假公婆退休舅纽约旅行常法国阿姨象虎熊猴企鹅胖颈鹿脖姑话影像写信问题定";
+      const trad = "萬與醜專業叢東絲丟兩嚴喪個豐臨為麗舉麼義烏樂喬習鄉書買亂爭於虧雲亞產畝親億僅從倉儀們價眾優夥會傘偉傳傷倫偽體餘傭俠偵側僑儈儕儂倆儷儉債傾儲兒兌黨蘭關興茲養獸內岡冊寫軍農冬決況凍淨淒涼減湊幾擊劃則剛創刪別刮到劑剃削前剮劍劇剩剪副割力勸辦功加務動助努劫勵勁勞勢勇勉勳勒勤勺勾勿勻包匆匈化北區醫卅升半華協卑單賣南博卜盧鹵臥衛卻卵卷卸廠廳歷厲壓厭廁廂廈廚廄發變雞飽附超級巧克力冰淇淋糖果餐蛋炒累趕快洗澡肥皂昨友散步養丟向希望這來說對沒覺得樣歡迎學校語幫網絡點長瘦車門開關動物園玩見看裡邊電腦認識訴誰條嗎飯湯樹葉黃綠色紅白農曆華糕爺奶臺灣貼春聯放鞭炮起床睡覺晚刷臉乾淨寵狗貓兔餵南北東西針教室足場暑假公婆退休舅紐約旅行常法國阿姨象虎熊猴企鵝胖頸鹿脖姑話影像寫信問題定";
+      let result = '';
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const index = simp.indexOf(char);
+        result += index !== -1 ? trad[index] : char;
+      }
+      return result;
+    };
+
+    const normalizeNumbers = (text) => {
+      return text
+        .replace(/10/g, '十')
+        .replace(/11/g, '十一')
+        .replace(/12/g, '十二')
+        .replace(/1/g, '一')
+        .replace(/2/g, '二')
+        .replace(/3/g, '三')
+        .replace(/4/g, '四')
+        .replace(/5/g, '五')
+        .replace(/6/g, '六')
+        .replace(/7/g, '七')
+        .replace(/8/g, '八')
+        .replace(/9/g, '九')
+        .replace(/0/g, '零');
+    };
+
+    const HOMOPHONE_ALIASES = {
+      '莉': ['麗', '利', '力', '立', '例'],
+      '方': ['芳', '幫', '防'], 
+      '友': ['有'],
+      '朋': ['鵬', '盆', '彭'],
+      '他': ['她', '它', '牠'],
+      '她': ['他', '它', '牠'],
+      '牠': ['他', '她', '它'],
+      '裡': ['里', '李'],
+      '做': ['作', '坐'],
+      '作': ['做', '坐'],
+      '哪': ['那', '拿'],
+      '那': ['哪', '拿'],
+      '麵': ['面'],
+      '吧': ['把', '拔', '八'],
+      '嗎': ['嘛', '麻', '馬', '碼'],
+      '啊': ['阿'],
+      '快': ['塊'],
+      '塊': ['快'],
+      '候': ['後', '后'],
+      '後': ['候', '后'],
+      '課': ['顆', '克', '客'],
+      '可': ['渴'],
+      '以': ['已'],
+      '已': ['以'],
+      '買': ['买', '馬', '瑪'],
+      '賣': ['卖', '邁'],
+      '炒': ['草', '吵', '找'],
+      '訴': ['素', '塑', '速'],
+      '玩': ['完', '丸'],
+      '胖': ['旁', '棒'],
+      '瘦': ['受', '獸', '售'],
+      '隻': ['只', '枝', '知', '之'],
+      '兩': ['二', '两'],
+      '覺': ['角', '腳', '教'],
+      '網': ['往', '枉'],
+      '路': ['鹿', '露', '陸'],
+      '姑': ['估', '咕', '孤'],
+      '影': ['引', '飲'],
+      '像': ['相', '向'],
+      '說': ['收'], 
+      '件': ['見', '建', '健'],
+      '見': ['件', '建', '健'],
+      '期': ['七', '其', '奇'],
+      '星': ['心', '新'],
+      '錯': ['措', '挫'],
+      '舒': ['書', '輸', '叔'],
+      '服': ['福', '符'],
+      '游': ['遊', '由', '尤'],
+      '泳': ['勇', '湧']
+    };
+
+    let audioCtx = null;
+
+    const playSound = (type) => {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      
+      const ctx = audioCtx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      if (type === 'level-clear') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);       
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15); 
+        osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.3);  
+        osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.45); 
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.8);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.8);
+      } else if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.5);
+      } else if (type === 'mild-success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.4);
+      } else if (type === 'try-again') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(392.00, ctx.currentTime);
+        osc.frequency.setValueAtTime(329.63, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.4);
+      } else if (type === 'pop') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.1);
+      }
+    };
+
+    const getTrackNodes = (total) => {
+      const fruits = ['🍎', '🍐', '🍑', '🍓', '🍊', '🍉', '🍇', '🍒']; 
+      const nodes = [];
+      for (let i = 0; i < total; i++) {
+        if (i === total - 1) nodes.push('🦋'); 
+        else if (i === total - 2) nodes.push('🏠'); 
+        else if (i === total - 3) nodes.push('🍃'); 
+        else nodes.push(fruits[i % fruits.length]); 
+      }
+      return nodes;
+    };
+
+    function App() {
+      // --- 語言狀態 ---
+      const [lang, setLang] = useState('zh');
+      const t = TRANSLATIONS[lang]; // 捷徑
+
+      const [selectedLesson, setSelectedLesson] = useState(LESSONS[0]);
+      const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
+      const [isRecording, setIsRecording] = useState(false);
+      const [recognizedText, setRecognizedText] = useState('');
+      const [result, setResult] = useState(null); 
+      const [errorMsg, setErrorMsg] = useState('');
+      const [showZhuyin, setShowZhuyin] = useState(false); 
+      const [isHoveringMic, setIsHoveringMic] = useState(false);
+      const [copySuccess, setCopySuccess] = useState(false);
+      const [isFlyingAway, setIsFlyingAway] = useState(false);
+
+      const [studentName, setStudentName] = useState('');
+      const [tempName, setTempName] = useState('');
+      const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+      
+      const [sessionStars, setSessionStars] = useState(0);
+      const [isFullscreen, setIsFullscreen] = useState(false);
+
+      const recognitionRef = useRef(null);
+      const lessonListRef = useRef(null);
+
+      // --- 切換語言函式 ---
+      const toggleLanguage = () => {
+        playSound('pop');
+        setLang(prev => prev === 'zh' ? 'en' : 'zh');
+      };
+
+      useEffect(() => {
+        const handleFullscreenChange = () => {
+          setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      }, []);
+
+      useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const lessonParam = urlParams.get('lesson');
+        
+        if (lessonParam) {
+          const foundLesson = LESSONS.find(l => l.id === lessonParam);
+          if (foundLesson) {
+            setSelectedLesson(foundLesson);
+          }
+        }
+      }, []);
+
+      useEffect(() => {
+        if (showSuccessScreen) {
+          confetti({
+            particleCount: 200,
+            spread: 160,
+            origin: { y: 0.4 },
+            colors: ['#FFB020', '#FF5252', '#4CAF50', '#2196F3', '#9C27B0']
+          });
+        }
+      }, [showSuccessScreen]);
+
+      useEffect(() => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          recognitionRef.current = new SpeechRecognition();
+          recognitionRef.current.lang = 'cmn-Hant-TW'; 
+          recognitionRef.current.continuous = false;
+          recognitionRef.current.interimResults = true; 
+
+          recognitionRef.current.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+              if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+              } else {
+                interimTranscript += event.results[i][0].transcript;
+              }
+            }
+            
+            const rawText = finalTranscript || interimTranscript;
+            const traditionalText = simplifyToTraditional(rawText);
+            setRecognizedText(traditionalText);
+          };
+
+          recognitionRef.current.onerror = (event) => {
+            console.error("Speech recognition error:", event.error);
+            const currentT = TRANSLATIONS[lang]; // 確保抓到最新的翻譯
+            if (event.error === 'not-allowed') {
+              setErrorMsg(currentT.errMicPermission);
+            } else if (event.error === 'no-speech') {
+              setErrorMsg(currentT.errNoSpeech);
+            } else if (event.error === 'audio-capture') {
+              setErrorMsg(currentT.errNoMic);
+            } else {
+              setErrorMsg(currentT.errMicError.replace('{error}', event.error));
+            }
+            setIsRecording(false);
+          };
+
+          recognitionRef.current.onend = () => {
+            setIsRecording(false);
+          };
+        } else {
+          setErrorMsg(TRANSLATIONS[lang].errNoSupport);
+        }
+      }, [lang]);
+
+      useEffect(() => {
+        if (!isRecording && recognizedText && recognizedText !== TRANSLATIONS['zh'].teacherPassed && recognizedText !== TRANSLATIONS['en'].teacherPassed) {
+          evaluateSpeech();
+        }
+      }, [isRecording, recognizedText]);
+
+      useEffect(() => {
+        setCurrentSentenceIndex(0);
+        setRecognizedText('');
+        setResult(null);
+        setErrorMsg('');
+        setIsFlyingAway(false);
+        setSessionStars(0); 
+      }, [selectedLesson]);
+
+      const targetSentenceObj = selectedLesson.sentences[currentSentenceIndex];
+      
+      const isPassed = result && result.stars >= 1;
+      const effectiveProgress = isPassed ? currentSentenceIndex + 1 : currentSentenceIndex;
+      const totalSentences = selectedLesson.sentences.length;
+      const progressPercentage = (effectiveProgress / totalSentences) * 100;
+      const trackNodes = getTrackNodes(totalSentences); 
+      
+      const springTransition = {
+        transitionProperty: 'all',
+        transitionDuration: '1000ms',
+        transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+      };
+
+      const playDemoSpeech = () => {
+        playSound('pop');
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel(); 
+          const utterance = new SpeechSynthesisUtterance(targetSentenceObj.text);
+          utterance.lang = 'zh-TW'; 
+          utterance.rate = 0.85; 
+          window.speechSynthesis.speak(utterance);
+        } else {
+          alert(t.errDemoSpeech);
+        }
+      };
+
+      const playSingleCharSpeech = (char) => {
+        playSound('pop');
+        if ('speechSynthesis' in window && !/[，。、！？；：「」『』\s]/.test(char)) {
+          window.speechSynthesis.cancel(); 
+          const utterance = new SpeechSynthesisUtterance(char);
+          utterance.lang = 'zh-TW'; 
+          window.speechSynthesis.speak(utterance);
+        }
+      };
+
+      const startRecording = () => {
+        if (isRecording) return; 
+        playSound('pop');
+        setErrorMsg('');
+        setRecognizedText('');
+        setResult(null);
+        try {
+          recognitionRef.current.start();
+          setIsRecording(true);
+        } catch (e) {
+          console.error("Start recording error:", e);
+          setErrorMsg(t.errStartMic);
+          setIsRecording(false);
+        }
+      };
+
+      const stopRecording = () => {
+        if (recognitionRef.current && isRecording) {
+          recognitionRef.current.stop();
+          playSound('pop');
+        }
+      };
+
+      const evaluateSpeech = () => {
+        const cleanTarget = removePunctuation(targetSentenceObj.text);
+        let cleanRecognized = normalizeNumbers(removePunctuation(recognizedText));
+
+        let matchedChars = [];
+        let correctCount = 0;
+        
+        for (let i = 0; i < targetSentenceObj.text.length; i++) {
+          const char = targetSentenceObj.text[i];
+          const zhuyin = targetSentenceObj.zhuyin[i];
+
+          if (/[，。、！？；：「」『』\s]/.test(char)) {
+             matchedChars.push({ char, zhuyin, isPunc: true, isCorrect: true });
+          } else {
+             let isMatch = cleanRecognized.includes(char);
+             if (!isMatch && HOMOPHONE_ALIASES[char]) {
+               isMatch = HOMOPHONE_ALIASES[char].some(alias => cleanRecognized.includes(alias));
+             }
+
+             if (isMatch) {
+               matchedChars.push({ char, zhuyin, isPunc: false, isCorrect: true });
+               correctCount++;
+             } else {
+               matchedChars.push({ char, zhuyin, isPunc: false, isCorrect: false });
+             }
+          }
+        }
+
+        if (cleanRecognized.length === 0) return;
+
+        const accuracy = correctCount / cleanTarget.length;
+        let stars = 0;
+        if (accuracy === 1) stars = 3;
+        else if (accuracy >= 0.7) stars = 2;
+        else if (accuracy >= 0.4) stars = 1;
+
+        setSessionStars(prev => prev + stars);
+
+        const isLastSentence = currentSentenceIndex === totalSentences - 1;
+
+        if (stars > 0 && isLastSentence) {
+          playSound('level-clear'); 
+          confetti({
+            particleCount: 300,
+            spread: 120,
+            origin: { y: 0.5 },
+            colors: ['#FFB020', '#FF5252', '#4CAF50', '#2196F3']
+          });
+        } else if (stars === 3) {
+          playSound('success');
+          confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.6 },
+            colors: ['#FFB020', '#4CAF50']
+          });
+        } else if (stars > 0) {
+          playSound('mild-success');
+        } else {
+          playSound('try-again');
+        }
+
+        setResult({
+          accuracy: Math.round(accuracy * 100),
+          stars,
+          matchedChars
+        });
+      };
+
+      const handleNext = () => {
+        playSound('pop');
+        setRecognizedText('');
+        setResult(null);
+        setErrorMsg('');
+        setCurrentSentenceIndex(prev => prev + 1);
+      };
+
+      const toggleFullScreen = () => {
+        playSound('pop');
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(err => {
+            console.log(`Error attempting to enable fullscreen: ${err.message}`);
+          });
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          }
+        }
+      };
+
+      const handleSkip = () => {
+        playSound('pop');
+        setRecognizedText(t.teacherPassed);
+        setSessionStars(prev => prev + 1); 
+        
+        let fakeMatched = [];
+        for (let i = 0; i < targetSentenceObj.text.length; i++) {
+           const char = targetSentenceObj.text[i];
+           const zhuyin = targetSentenceObj.zhuyin[i];
+           const isPunc = /[，。、！？；：「」『』\s]/.test(char);
+           fakeMatched.push({ char, zhuyin, isPunc, isCorrect: true });
+        }
+        
+        setResult({
+          accuracy: 100,
+          stars: 1,
+          matchedChars: fakeMatched
+        });
+        
+        const isLastSentence = currentSentenceIndex === totalSentences - 1;
+        if(isLastSentence) {
+          playSound('level-clear'); 
+        } else {
+          playSound('mild-success');
+        }
+      };
+
+      const finishLesson = () => {
+        playSound('pop');
+        setIsFlyingAway(true); 
+        
+        confetti({
+          particleCount: 200,
+          spread: 100,
+          origin: { y: 0.6 },
+          colors: ['#FFB020', '#FF5252', '#4CAF50', '#2196F3', '#9C27B0']
+        });
+        
+        setTimeout(() => {
+          confetti({
+            particleCount: 300,
+            spread: 150,
+            origin: { y: 0.4 },
+            colors: ['#FFB020', '#FF5252', '#4CAF50', '#2196F3', '#9C27B0']
+          });
+        }, 1200);
+
+        setTimeout(() => {
+          setShowSuccessScreen(true);
+        }, 3200); 
+      };
+
+      const scrollLessons = (direction) => {
+        if (lessonListRef.current) {
+          const scrollAmount = 200;
+          lessonListRef.current.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+        }
+      }
+
+      const copyLessonLink = () => {
+        playSound('pop');
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('lesson', selectedLesson.id);
+        const urlToCopy = currentUrl.toString();
+        
+        const textArea = document.createElement("textarea");
+        textArea.value = urlToCopy;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                setCopySuccess(true);
+                setTimeout(() => setCopySuccess(false), 2000);
+            } else {
+                alert(t.errCopy);
+            }
+        } catch (err) {
+            console.error('Failed to copy', err);
+            alert(t.errCopy);
+        }
+        
+        document.body.removeChild(textArea);
+      };
+
+      if (!studentName) {
+        return (
+          <div className="min-h-[100dvh] bg-gradient-to-br from-orange-50 to-yellow-100 font-sans p-0 sm:p-4 flex flex-col items-center justify-center">
+            {/* 語言切換按鈕 (首頁) */}
+            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
+              <button 
+                onClick={toggleLanguage}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/60 hover:bg-white text-orange-600 rounded-full font-bold shadow-sm hover:shadow transition-all border border-orange-200"
+              >
+                <Globe className="w-4 h-4" />
+                {lang === 'zh' ? 'EN' : '中'}
+              </button>
+            </div>
+
+            <div className="bg-white rounded-none sm:rounded-[3rem] shadow-2xl p-6 md:p-12 w-full max-w-md h-[100dvh] sm:h-auto flex flex-col justify-center text-center relative overflow-hidden sm:border-4 border-white safe-paddings">
+              <Sparkles className="absolute top-6 left-6 w-12 h-12 text-yellow-200 opacity-60 animate-pulse" />
+              <Sparkles className="absolute bottom-6 right-6 w-12 h-12 text-yellow-200 opacity-60 animate-pulse" style={{ animationDelay: '1s' }} />
+              
+              <div className="flex justify-center mb-4 sm:mb-6">
+                <div className="bg-orange-100 p-3 sm:p-4 rounded-full">
+                  <Award className="w-12 h-12 sm:w-16 sm:h-16 text-orange-500 animate-bounce" style={{ animationDuration: '2s' }} />
+                </div>
+              </div>
+              
+              <h1 className="text-3xl sm:text-4xl font-black text-orange-600 tracking-wider mb-2">{t.appTitle}</h1>
+              <p className="text-gray-400 font-bold mb-6 tracking-widest text-base sm:text-lg">{t.appSubtitle}</p>
+              
+              {/* 使用方法區塊 */}
+              <div className="bg-orange-50/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 mb-6 text-left border-2 border-orange-100 shadow-sm mx-auto max-w-[280px] sm:max-w-none w-full relative z-10">
+                <h3 className="font-black text-orange-600 mb-3 text-sm sm:text-base flex items-center justify-center gap-1.5">
+                  <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" /> {t.tipsTitle}
+                </h3>
+                <ul className="text-xs sm:text-sm text-gray-600 space-y-2 sm:space-y-3 font-bold">
+                  <li className="flex items-center gap-2.5">
+                    <div className="bg-white p-1.5 sm:p-2 rounded-full shadow-sm shrink-0"><Mic className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500"/></div>
+                    <span>{t.tip1}</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <div className="bg-white p-1.5 sm:p-2 rounded-full shadow-sm shrink-0"><Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 fill-yellow-500"/></div>
+                    <span>{t.tip2}</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <div className="bg-white p-1.5 sm:p-2 rounded-full shadow-sm shrink-0 flex items-center justify-center w-[26px] h-[26px] sm:w-[32px] sm:h-[32px]"><span className="text-xs sm:text-sm">🦋</span></div>
+                    <span>{t.tip3}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mb-6 sm:mb-8 relative z-10">
+                <label className="block text-gray-700 text-lg sm:text-xl font-bold mb-3 sm:mb-4">{t.enterName}</label>
+                <input
+                  type="text"
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  onKeyDown={(e) => { 
+                    if(e.key === 'Enter' && tempName.trim()) { 
+                      setStudentName(tempName.trim()); 
+                      playSound('pop'); 
+                    } 
+                  }}
+                  className="w-full text-center text-2xl sm:text-3xl font-bold text-orange-600 p-3 sm:p-4 bg-orange-50/50 border-4 border-orange-200 rounded-2xl sm:rounded-3xl focus:outline-none focus:border-orange-500 focus:bg-white transition-all placeholder-orange-200"
+                  placeholder={t.placeholderName}
+                  autoFocus
+                />
+              </div>
+              
+              <button
+                disabled={!tempName.trim()}
+                onClick={() => { setStudentName(tempName.trim()); playSound('pop'); }}
+                className="w-full bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white font-black text-xl sm:text-2xl py-4 sm:py-5 rounded-full shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 active:scale-95 mt-auto sm:mt-0 relative z-10"
+              >
+                {t.startBtn}
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      if (showSuccessScreen) {
+        return (
+          <div className="min-h-[100dvh] bg-gradient-to-br from-green-50 to-blue-50 font-sans p-0 sm:p-4 flex flex-col items-center justify-center">
+            <div className="bg-white rounded-none sm:rounded-[3rem] shadow-2xl p-8 md:p-16 w-full max-w-2xl h-[100dvh] sm:h-auto flex flex-col justify-center text-center relative overflow-hidden sm:border-8 border-white animate-fade-in-up safe-paddings">
+              <div className="absolute inset-0 bg-yellow-50 opacity-50 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-yellow-200/40 to-transparent"></div>
+              
+              <div className="text-8xl animate-bounce mb-8 relative z-10" style={{ animationDuration: '3s' }}>🦋</div>
+              
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-orange-500 mb-6 relative z-10 tracking-widest drop-shadow-sm">
+                {t.successTitle}
+              </h2>
+              
+              <div className="text-xl sm:text-2xl md:text-3xl text-gray-600 font-bold mb-8 leading-loose relative z-10">
+                {t.congrats} <span className="text-green-600 text-3xl sm:text-4xl md:text-5xl mx-2 pb-1 border-b-4 border-green-400">{studentName}</span> <br className="hidden sm:block"/>
+                <span className="sm:hidden"> </span>{t.completed}<br/>
+                <span className="text-blue-500 inline-block mt-4 bg-blue-50 px-6 py-2 rounded-2xl border-2 border-blue-100">
+                  {lang === 'zh' ? selectedLesson.title : selectedLesson.titleEn}
+                </span>
+              </div>
+
+              <div className="flex justify-center items-center gap-2 mb-10 relative z-10 bg-yellow-50 px-6 py-3 rounded-full border-2 border-yellow-200 inline-flex mx-auto">
+                <Star className="w-8 h-8 text-yellow-500 fill-yellow-500 animate-pulse" />
+                <span className="text-xl sm:text-2xl font-black text-yellow-600">{t.collectedStars.replace('{n}', sessionStars)}</span>
+              </div>
+              
+              <br/>
+              <button
+                onClick={() => {
+                  playSound('pop');
+                  setCurrentSentenceIndex(0);
+                  setRecognizedText('');
+                  setResult(null);
+                  setIsFlyingAway(false);
+                  setShowSuccessScreen(false);
+                  setSessionStars(0);
+                }}
+                className="px-8 sm:px-10 py-4 sm:py-5 bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white rounded-full font-black text-xl sm:text-2xl transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95 relative z-10 inline-block mt-auto sm:mt-0"
+              >
+                {t.tryAnother}
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-[100dvh] bg-gradient-to-br from-orange-50 to-yellow-100 font-sans p-0 sm:p-4 md:p-8 flex flex-col items-center">
+          <header className="w-full max-w-4xl bg-white sm:rounded-3xl shadow-sm p-4 sm:p-6 mb-2 sm:mb-8 text-center sm:border-b-4 border-orange-400 relative overflow-hidden group shrink-0 pt-safe">
+            <Sparkles className="absolute -top-4 -left-4 w-16 h-16 text-yellow-200 opacity-50 group-hover:rotate-12 transition-transform" />
+            <Sparkles className="absolute -bottom-4 -right-4 w-16 h-16 text-yellow-200 opacity-50 group-hover:-rotate-12 transition-transform" />
+            
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-orange-600 flex items-center justify-center gap-2 sm:gap-3 relative z-10">
+              <Award className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-500 animate-bounce" style={{ animationDuration: '2s' }} />
+              {t.appTitle}
+              <Award className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-500 animate-bounce" style={{ animationDuration: '2.5s' }} />
+            </h1>
+            <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-lg relative z-10 font-bold">
+              {lang === 'zh' ? `${t.littleCaterpillar} ` : ''}<span className="text-green-600">{studentName}</span>{lang === 'en' ? '' : ' '}{t.readingChallenge}
+            </p>
+            
+            <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-6 md:right-6 flex flex-col gap-2 z-20 items-end">
+              {/* 第一排：全螢幕、注音 */}
+              <div className="flex gap-2">
+                <button 
+                  onClick={toggleFullScreen}
+                  className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all sm:w-28 ${
+                    isFullscreen 
+                      ? 'bg-purple-500 text-white shadow-md' 
+                      : 'bg-purple-50 hover:bg-purple-100 text-purple-600'
+                  }`}
+                  title={t.fullscreen}
+                >
+                  <Maximize className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">{t.fullscreen}</span>
+                </button>
+                <button 
+                  onClick={() => { playSound('pop'); setShowZhuyin(!showZhuyin); }}
+                  className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all sm:w-32 ${
+                    showZhuyin 
+                      ? 'bg-orange-500 text-white shadow-md' 
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                  }`}
+                >
+                  <Type className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">{showZhuyin ? t.hideZhuyin : t.showZhuyin}</span>
+                  <span className="sm:hidden">{showZhuyin ? t.hideMobile : t.zhuyinMobile}</span>
+                </button>
+              </div>
+              
+              {/* 第二排：語言、複製網址 */}
+              <div className="flex gap-2 w-full sm:w-auto justify-end">
+                <button 
+                  onClick={toggleLanguage}
+                  className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all bg-orange-50 hover:bg-orange-100 text-orange-600 whitespace-nowrap"
+                  title="切換語言 / Switch Language"
+                >
+                  <Globe className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span>{lang === 'zh' ? 'EN' : '中'}</span>
+                </button>
+                <button 
+                  onClick={copyLessonLink}
+                  className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all flex-1 sm:flex-none sm:w-auto sm:px-5 ${
+                    copySuccess 
+                      ? 'bg-green-500 text-white shadow-md' 
+                      : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
+                  }`}
+                  title={t.copyLink}
+                >
+                  {copySuccess && <span className="flex items-center gap-1"><Check className="w-3 h-3 sm:w-4 sm:h-4" /> {t.copied}</span>}
+                  {!copySuccess && <span className="flex items-center gap-1"><LinkIcon className="w-3 h-3 sm:w-4 sm:h-4" /> {t.copyLink}</span>}
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <main className="w-full max-w-4xl flex-1 flex flex-col pb-safe">
+            <div className="relative mb-2 sm:mb-4 shrink-0">
+              <button onClick={() => scrollLessons('left')} className="absolute left-0 top-1/2 -translate-y-1/2 bg-white/80 p-1 sm:p-2 rounded-full shadow-md z-10 hover:bg-orange-100 hidden md:block">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div ref={lessonListRef} className="flex overflow-x-auto pb-2 sm:pb-4 gap-2 sm:gap-3 scrollbar-hide snap-x px-4 sm:px-8">
+                {LESSONS.map((lesson) => (
+                  <button
+                    key={lesson.id}
+                    onClick={() => {
+                      playSound('pop');
+                      setSelectedLesson(lesson);
+                    }}
+                    className={`whitespace-nowrap px-4 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold transition-all snap-start flex-shrink-0 ${
+                      selectedLesson.id === lesson.id
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg transform scale-105 -translate-y-1'
+                        : 'bg-white text-orange-600 hover:bg-orange-50 border border-orange-100 shadow-sm hover:shadow-md'
+                    }`}
+                  >
+                    {lang === 'zh' ? `${lesson.id} ${lesson.title.split('：')[1]}` : lesson.titleEn}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => scrollLessons('right')} className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/80 p-1 sm:p-2 rounded-full shadow-md z-10 hover:bg-orange-100 hidden md:block">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {errorMsg && (
+              <div className="bg-red-100 text-red-700 p-3 sm:p-4 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 flex items-center gap-2 text-sm sm:text-base font-bold animate-bounce shadow-sm border border-red-200 shrink-0">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-xl p-4 sm:p-6 md:p-10 text-center relative overflow-y-auto sm:overflow-visible border-t-4 sm:border-4 border-white z-10 flex-1 flex flex-col">
+              <div className="absolute top-4 sm:top-6 left-4 sm:left-6 text-xs sm:text-sm font-bold text-orange-400 bg-orange-50 px-2 sm:px-3 py-1 rounded-full shadow-inner hidden md:block">
+                {lang === 'zh' ? selectedLesson.title.split('：')[0] : selectedLesson.id}
+              </div>
+
+              <div className="absolute top-4 sm:top-6 right-4 sm:right-6 flex items-center gap-1 text-sm sm:text-base font-bold text-yellow-600 bg-yellow-50 px-2 sm:px-3 py-1 rounded-full shadow-inner">
+                <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400" /> {sessionStars}
+              </div>
+
+              <div className="w-full mb-6 sm:mb-12 mt-8 sm:mt-4 px-2 md:px-12 relative z-50 shrink-0">
+                <div className="relative w-full h-6 bg-green-50 rounded-full border-2 border-green-200 shadow-inner">
+                  
+                  <div 
+                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-300 to-green-500 rounded-full"
+                    style={{ width: `${progressPercentage}%`, ...springTransition }}
+                  />
+                  
+                  {trackNodes.map((nodeEmoji, idx) => {
+                    const positionPercentage = ((idx + 1) / totalSentences) * 100;
+                    return (
+                      <div 
+                        key={idx}
+                        className={`absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 text-xl md:text-2xl transition-all duration-500 ${
+                          idx === totalSentences - 1 && effectiveProgress !== totalSentences ? 'animate-pulse' : ''
+                        }`}
+                        style={{ 
+                          left: `${positionPercentage}%`,
+                          opacity: effectiveProgress > idx ? 0 : 1, 
+                          filter: effectiveProgress > idx ? 'grayscale(100%)' : 'none',
+                          zIndex: 5
+                        }}
+                      >
+                        {nodeEmoji}
+                      </div>
+                    );
+                  })}
+
+                  <div 
+                    className="absolute top-1/2 z-50"
+                    style={{ 
+                      left: `${progressPercentage}%`,
+                      transform: 'translate(-50%, -50%)',
+                      zIndex: isFlyingAway ? 9999 : 50,
+                      ...springTransition 
+                    }}
+                  >
+                    <div 
+                      className="transition-all duration-1000 origin-center drop-shadow-md text-2xl sm:text-3xl"
+                      style={ isFlyingAway ? { animation: 'flyAwayCenter 3s ease-in-out forwards' } : {
+                        transform: effectiveProgress === totalSentences 
+                          ? 'scale(1.5)' 
+                          : effectiveProgress === totalSentences - 1 
+                            ? 'scale(1.3)' 
+                            : `scaleX(-${1 + effectiveProgress * 0.15}) scaleY(${1 + effectiveProgress * 0.15})`,
+                        animation: effectiveProgress === totalSentences ? 'fly 2s infinite alternate ease-in-out' : 'none'
+                      }}
+                    >
+                      {effectiveProgress === totalSentences 
+                        ? '🦋' 
+                        : effectiveProgress === totalSentences - 1 
+                          ? '🏠' 
+                          : '🐛'}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-green-600 font-bold mt-4 tracking-widest text-xs sm:text-sm">
+                  {t.progress} {effectiveProgress} / {totalSentences}
+                </div>
+              </div>
+
+              <div className="mt-2 sm:mt-8 mb-6 sm:mb-12 relative flex-1 flex flex-col justify-center">
+                <div className="flex justify-center items-center gap-2 mb-3 sm:mb-4">
+                  <h2 className="text-lg sm:text-xl text-gray-400 font-bold m-0 tracking-widest">{t.readAloud}</h2>
+                  <span className="text-xs text-gray-300 ml-2 hidden md:inline">{t.clickToHear}</span>
+                </div>
+                
+                <div className="flex justify-center items-center gap-2 sm:gap-3 mb-4 sm:mb-8 flex-wrap">
+                  <button 
+                    onClick={playDemoSpeech}
+                    className="flex items-center gap-1 sm:gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition-all shadow-sm hover:shadow border border-blue-100 hover:scale-105 active:scale-95"
+                  >
+                    <Volume2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                    {t.listenExample}
+                  </button>
+                  
+                  {!result && (
+                    <button 
+                      onClick={handleSkip}
+                      className="flex items-center gap-1 sm:gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-500 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition-all shadow-sm hover:shadow border border-gray-200 hover:scale-105 active:scale-95"
+                    >
+                      <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                      {t.teacherHelp}
+                    </button>
+                  )}
+                </div>
+                
+                <div className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-800 leading-[3.5rem] sm:leading-[4.5rem] flex flex-wrap justify-center items-end min-h-[100px] sm:min-h-[120px]">
+                  {result ? (
+                    result.matchedChars.map((item, idx) => (
+                      <ruby key={idx} className="mx-[3px] transition-all duration-300 transform hover:scale-110">
+                        <span className={`${item.isPunc ? 'text-gray-300' : (item.isCorrect ? 'text-green-500 drop-shadow-sm' : 'text-red-400 opacity-80')}`}>
+                          {item.char}
+                        </span>
+                        {showZhuyin && !item.isPunc && (
+                          <rt className={`text-base sm:text-xl font-normal font-sans tracking-tighter mb-1 sm:mb-2 ${item.isCorrect ? 'text-green-400' : 'text-red-300'}`}>
+                            {item.zhuyin}
+                          </rt>
+                        )}
+                      </ruby>
+                    ))
+                  ) : (
+                    targetSentenceObj.text.split('').map((char, idx) => {
+                      const zhuyin = targetSentenceObj.zhuyin[idx];
+                      const isPunc = /[，。、！？；：「」『』\s]/.test(char);
+                      return (
+                        <ruby 
+                          key={idx} 
+                          onClick={() => playSingleCharSpeech(char)}
+                          className={`mx-[3px] transition-all duration-300 ${!isPunc ? 'cursor-pointer hover:bg-orange-50 rounded-lg p-1 group' : ''}`}
+                          title={!isPunc ? t.clickToHearMobile : ''}
+                        >
+                          <span className={isPunc ? "text-gray-300" : "text-gray-700 group-hover:text-orange-500 transition-colors"}>{char}</span>
+                          {showZhuyin && !isPunc && (
+                            <rt className="text-base sm:text-xl text-gray-400 font-normal font-sans tracking-tighter mb-1 sm:mb-2">
+                              {zhuyin}
+                            </rt>
+                          )}
+                        </ruby>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center justify-center gap-4 sm:gap-6 relative z-10 mt-auto shrink-0 mb-4 sm:mb-0">
+                <div className={`absolute w-24 h-24 sm:w-32 sm:h-32 rounded-full transition-all duration-500 ${isRecording ? 'bg-orange-200 animate-ping opacity-75' : 'bg-transparent'}`}></div>
+                
+                <button
+                  onMouseEnter={() => setIsHoveringMic(true)}
+                  onMouseLeave={() => setIsHoveringMic(false)}
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isFlyingAway}
+                  className={`relative w-20 h-20 sm:w-28 sm:h-28 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl z-10 ${
+                    isRecording 
+                      ? 'bg-red-500 hover:bg-red-600 scale-110' 
+                      : isFlyingAway 
+                        ? 'bg-gray-300 cursor-not-allowed opacity-50'
+                        : 'bg-gradient-to-b from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 hover:scale-105'
+                  }`}
+                >
+                  {isRecording ? (
+                    <Square className="w-8 h-8 sm:w-12 sm:h-12 text-white animate-pulse" fill="currentColor" />
+                  ) : (
+                    <Mic className={`w-10 h-10 sm:w-14 sm:h-14 text-white transition-transform duration-300 ${isHoveringMic && !isFlyingAway ? 'scale-110 rotate-6' : ''}`} />
+                  )}
+                </button>
+
+                <div className="h-6 sm:h-8">
+                  {isRecording ? (
+                    <p className="text-orange-600 font-black tracking-wider animate-pulse text-sm sm:text-lg bg-orange-50 px-3 sm:px-4 py-1 rounded-full">{t.listening}</p>
+                  ) : (
+                    <p className="text-gray-400 font-bold tracking-widest text-sm sm:text-lg">{t.clickMicToStart}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className={`mt-6 sm:mt-10 transition-all duration-500 shrink-0 ${recognizedText ? 'opacity-100 transform translate-y-0 h-auto mb-4' : 'opacity-0 transform translate-y-4 h-0 overflow-hidden mb-0'}`}>
+                <div className="min-h-[60px] sm:min-h-[80px] bg-gray-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-2 border-dashed border-gray-200 relative">
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-white px-2 sm:px-3 text-[10px] sm:text-xs font-bold text-gray-400 tracking-widest rounded-full border border-gray-100 whitespace-nowrap">
+                    {t.micHeard}
+                  </div>
+                  <p className="text-lg sm:text-2xl font-medium text-gray-600 leading-relaxed">
+                    {recognizedText}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </main>
+
+          {/* 獨立在正中央彈出的星星結算畫面 */}
+          {result && !isRecording && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity duration-300">
+              <div className="bg-white rounded-[2.5rem] p-6 sm:p-10 max-w-md w-full text-center shadow-2xl animate-fade-in-up border-4 border-orange-100">
+                <div className="flex justify-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                  {[1, 2, 3].map((star) => (
+                    <div key={star} className={`transition-all duration-500 transform ${star <= result.stars ? 'scale-110' : 'scale-90 opacity-50'}`}>
+                      <Star 
+                        className={`w-16 h-16 sm:w-20 sm:h-20 ${
+                          star <= result.stars 
+                            ? 'text-yellow-400 fill-yellow-400 drop-shadow-lg' 
+                            : 'text-gray-200'
+                        }`} 
+                      />
+                    </div>
+                  ))}
+                </div>
+                
+                <p className={`text-2xl sm:text-3xl font-black mb-8 sm:mb-10 ${result.stars === 3 ? 'text-green-500' : 'text-orange-500'}`}>
+                  {result.stars === 3 ? t.perfect : 
+                   result.stars === 2 ? t.good : 
+                   t.tryAgainMsg}
+                </p>
+                
+                <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                  <button 
+                    onClick={startRecording}
+                    disabled={isFlyingAway}
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gray-50 hover:bg-gray-100 text-gray-600 border-2 border-gray-200 rounded-full font-bold transition-all hover:scale-105 active:scale-95 text-base sm:text-lg disabled:opacity-50"
+                  >
+                    <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6" /> {t.tryAgainBtn}
+                  </button>
+                  
+                  {currentSentenceIndex < totalSentences - 1 ? (
+                    <button 
+                      onClick={handleNext}
+                      className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white rounded-full font-bold transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 text-base sm:text-lg"
+                    >
+                      <Play className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" /> {t.nextSentence}
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={finishLesson}
+                      disabled={isFlyingAway}
+                      className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white rounded-full font-bold transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 text-base sm:text-lg animate-bounce disabled:animate-none disabled:opacity-50"
+                    >
+                      <Award className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" /> {t.finishLevel}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
