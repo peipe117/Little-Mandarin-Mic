@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>華語小麥克 - 課文朗讀小助手</title>
+  <title>課文我會讀</title>
   
   <!-- 引入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -18,83 +18,68 @@
   <!-- 引入 Canvas Confetti 撒花特效 -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
+  <!-- 🌟 引入 Firebase v8 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
   <style>
     /* 可愛波點背景 */
-    .bg-polka {
-      background-image: radial-gradient(#fdba74 3px, transparent 3px);
-      background-size: 32px 32px;
-    }
-
+    .bg-polka { background-image: radial-gradient(#fdba74 3px, transparent 3px); background-size: 32px 32px; }
     .pt-safe { padding-top: max(1rem, env(safe-area-inset-top)); }
     .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
-    .safe-paddings {
-      padding-top: max(2rem, env(safe-area-inset-top));
-      padding-bottom: max(2rem, env(safe-area-inset-bottom));
-    }
-
+    .safe-paddings { padding-top: max(2rem, env(safe-area-inset-top)); padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     
-    @keyframes fade-in-up {
-      0% { opacity: 0; transform: translateY(20px) scale(0.95); }
-      100% { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .animate-fade-in-up {
-      animation: fade-in-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    }
+    @keyframes fade-in-up { 0% { opacity: 0; transform: translateY(20px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+    .animate-fade-in-up { animation: fade-in-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
     
-    @keyframes fly {
-      0% { transform: scale(1.6) rotate(-15deg) translateY(0px); }
-      100% { transform: scale(1.6) rotate(15deg) translateY(-15px); }
-    }
+    @keyframes fly { 0% { transform: scale(1.6) rotate(-15deg) translateY(0px); } 100% { transform: scale(1.6) rotate(15deg) translateY(-15px); } }
     
-    @keyframes flyAwayCenter {
-      0% { transform: scale(1.6) translate(0px, 0px) rotate(0deg); opacity: 1; }
-      20% { transform: scale(4) translate(-80px, 80px) rotate(-15deg); opacity: 1; }
-      40% { transform: scale(7) translate(-200px, 200px) rotate(15deg); opacity: 1; }
-      60% { transform: scale(7) translate(-180px, 150px) rotate(-10deg); opacity: 1; }
-      80% { transform: scale(5) translate(-50px, -150px) rotate(20deg); opacity: 0.8; }
-      100% { transform: scale(3) translate(200px, -600px) rotate(15deg); opacity: 0; }
-    }
+    @keyframes flyAwayCenter { 0% { transform: scale(1.6) translate(0px, 0px) rotate(0deg); opacity: 1; } 20% { transform: scale(4) translate(-80px, 80px) rotate(-15deg); opacity: 1; } 40% { transform: scale(7) translate(-200px, 200px) rotate(15deg); opacity: 1; } 60% { transform: scale(7) translate(-180px, 150px) rotate(-10deg); opacity: 1; } 80% { transform: scale(5) translate(-50px, -150px) rotate(20deg); opacity: 0.8; } 100% { transform: scale(3) translate(200px, -600px) rotate(15deg); opacity: 0; } }
 
-    /* 氣球彈跳動畫 */
-    @keyframes gentle-bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-    .animate-gentle-bounce {
-      animation: gentle-bounce 3s ease-in-out infinite;
-    }
+    @keyframes gentle-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .animate-gentle-bounce { animation: gentle-bounce 3s ease-in-out infinite; }
     
-    /* 麥克風光暈 */
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.4); }
-      50% { box-shadow: 0 0 0 20px rgba(251, 146, 60, 0); }
-    }
-    .recording-glow {
-      animation: pulse-glow 1.5s infinite;
-    }
+    @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.4); } 50% { box-shadow: 0 0 0 20px rgba(251, 146, 60, 0); } }
+    .recording-glow { animation: pulse-glow 1.5s infinite; }
 
-    /* 漂浮食物動畫 */
-    @keyframes float-around {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      33% { transform: translate(15px, -25px) rotate(10deg); }
-      66% { transform: translate(-15px, -15px) rotate(-5deg); }
+    @keyframes float-around { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 33% { transform: translate(15px, -25px) rotate(10deg); } 66% { transform: translate(-15px, -15px) rotate(-5deg); } }
+    .animate-float-around { animation: float-around ease-in-out infinite; }
+
+    /* 🌟 Combo 動畫 */
+    @keyframes combo-pop {
+      0% { transform: translate(-50%, -50%) scale(0.5) rotate(-10deg); opacity: 0; }
+      50% { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); opacity: 1; }
+      80% { transform: translate(-50%, -50%) scale(0.9) rotate(-2deg); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
     }
-    .animate-float-around {
-      animation: float-around ease-in-out infinite;
-    }
+    .animate-combo { animation: combo-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
   </style>
 </head>
 <body class="font-sans antialiased text-gray-800">
   <div id="root"></div>
 
   <script type="text/babel">
+    const firebaseConfig = {
+      apiKey: "AIzaSyB0H7kpUw0oww0PGjuknJHMpfxZWev93ek",
+      authDomain: "mandarin-microphone.firebaseapp.com",
+      databaseURL: "https://mandarin-microphone-default-rtdb.firebaseio.com",
+      projectId: "mandarin-microphone",
+      storageBucket: "mandarin-microphone.firebasestorage.app",
+      messagingSenderId: "894162477113",
+      appId: "1:894162477113:web:84b14bfa6321d51f096de8"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
     const { useState, useEffect, useRef } = React;
 
-    // --- 圖示元件 ---
-    const IconBase = ({ d, children, className, fill = "none" }) => (
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    const IconBase = ({ d, children, className, fill = "none", style }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
         {d && <path d={d} />}
         {children}
       </svg>
@@ -115,18 +100,15 @@
     const HelpCircle = (props) => <IconBase className={props.className} fill={props.fill}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></IconBase>;
     const Maximize = (props) => <IconBase className={props.className} fill={props.fill}><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></IconBase>;
     const Globe = (props) => <IconBase className={props.className} fill={props.fill}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></IconBase>;
+    const Trophy = (props) => <IconBase className={props.className} fill={props.fill}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></IconBase>;
+    const XIcon = (props) => <IconBase className={props.className} fill={props.fill}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></IconBase>;
+    const ListIcon = (props) => <IconBase className={props.className} fill={props.fill}><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></IconBase>;
 
-    // --- 背景食物裝飾資料 ---
-    const CATERPILLAR_FOODS = ['🍎', '🍐', '🍑', '🍓', '🍊', '🍰', '🍦', '🥒', '🧀', '🌭', '🍭', '🍒', '🧁', '🍉', '🍃'];
+    const AVATARS = ['🐱', '🐶', '🦊', '🐰', '🐻', '🐼', '🐯', '🦁', '🦄', '🐲', '🐦‍🔥', '🦖'];
+
+    const MAGIC_ELEMENTS = ['✨', '🌟', '💎', '🎵', '🎶', '⚡', '🔮', '🎈', '☁️', '⭐'];
     const BACKGROUND_DECORATIONS = Array.from({ length: 25 }).map((_, i) => ({
-      id: i,
-      emoji: CATERPILLAR_FOODS[Math.floor(Math.random() * CATERPILLAR_FOODS.length)],
-      top: `${Math.random() * 90 + 5}%`,
-      left: `${Math.random() * 90 + 5}%`,
-      fontSize: `${Math.random() * 2 + 1.5}rem`,
-      animationDuration: `${Math.random() * 10 + 15}s`,
-      animationDelay: `${Math.random() * 5}s`,
-      opacity: Math.random() * 0.12 + 0.05 
+      id: i, emoji: MAGIC_ELEMENTS[Math.floor(Math.random() * MAGIC_ELEMENTS.length)], top: `${Math.random() * 90 + 5}%`, left: `${Math.random() * 90 + 5}%`, fontSize: `${Math.random() * 2 + 1.5}rem`, animationDuration: `${Math.random() * 10 + 15}s`, animationDelay: `${Math.random() * 5}s`, opacity: Math.random() * 0.12 + 0.05 
     }));
 
     const BackgroundDecorations = () => (
@@ -137,76 +119,101 @@
       </div>
     );
 
-    // --- 課程資料 ---
+    // 🌟 TTS 發音過濾器
+    const getTtsText = (text) => {
+      let t = text;
+      t = t.replace(/都會/g, '兜會');
+      t = t.replace(/都有/g, '兜有');
+      t = t.replace(/都帶/g, '兜帶');
+      t = t.replace(/都去/g, '兜去');
+      t = t.replace(/都餵/g, '兜餵');
+      if (t === '都') t = '兜';
+      t = t.replace(/還有/g, '孩有');
+      t = t.replace(/還會/g, '孩會');
+      t = t.replace(/還想/g, '孩想');
+      if (t === '還') t = '孩';
+      t = t.replace(/和/g, '汗');
+      if (t === '和') t = '汗';
+      t = t.replace(/長高/g, '掌高');
+      t = t.replace(/睡覺/g, '睡叫');
+      return t;
+    };
+
+    // --- 完整課程資料 (含拼音) ---
     const LESSONS = [
-      { id: 'L1', title: '第一課：新同學', titleEn: 'Lesson 1: New Classmates', sentences: [ { text: "今天，我們有兩個新同學，現在請他們介紹自己。", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ _ ㄨㄛˇ ㄇㄣ˙ ㄧㄡˇ ㄌㄧㄤˇ ㄍㄜ˙ ㄒㄧㄣ ㄊㄨㄥˊ ㄒㄩㄝˊ _ ㄒㄧㄢˋ ㄗㄞˋ ㄑㄧㄥˇ ㄊㄚ ㄇㄣ˙ ㄐㄧㄝˋ ㄕㄠˋ ㄗˋ ㄐㄧˇ _" }, { text: "大家好，我叫方友朋，今年八歲，我最喜歡跟爸爸一起游泳。", zhuyinStr: "ㄉㄚˋ ㄐㄧㄚ ㄏㄠˇ _ ㄨㄛˇ ㄐㄧㄠˋ ㄈㄤ ㄧㄡˇ ㄆㄥˊ _ ㄐㄧㄣ ㄋㄧㄢˊ ㄅㄚ ㄙㄨㄟˋ _ ㄨㄛˇ ㄗㄨㄟˋ ㄒㄧˇ ㄏㄨㄢ ㄍㄣ ㄅㄚˋ ㄅㄚ˙ ㄧˋ ㄑㄧˇ ㄧㄡˊ ㄩㄥˇ _" }, { text: "大家好，我叫張莉，今年七歲，我比較喜歡看書。", zhuyinStr: "ㄉㄚˋ ㄐㄧㄚ ㄏㄠˇ _ ㄨㄛˇ ㄐㄧㄠˋ ㄓㄤ ㄌㄧˋ _ ㄐㄧㄣ ㄋㄧㄢˊ ㄑㄧ ㄙㄨㄟˋ _ ㄨㄛˇ ㄅㄧˇ ㄐㄧㄠˋ ㄒㄧˇ ㄏㄨㄢ ㄎㄢˋ ㄕㄨ _" }, { text: "你們好，我叫李大文。很高興認識你們。", zhuyinStr: "ㄋㄧˇ ㄇㄣ˙ ㄏㄠˇ _ ㄨㄛˇ ㄐㄧㄠˋ ㄌㄧˇ ㄉㄚˋ ㄨㄣˊ _ ㄏㄣˇ ㄍㄠ ㄒㄧㄥˋ ㄖㄣˋ ㄕ˙ ㄋㄧˇ ㄇㄣ˙ _" }, { text: "歡迎你們來中文學校學華語。", zhuyinStr: "ㄏㄨㄢ ㄧㄥˊ ㄋㄧˇ ㄇㄣ˙ ㄌㄞˊ ㄓㄨㄥ ㄨㄣˊ ㄒㄩㄝˊ ㄒㄧㄠˋ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) },
-      { id: 'L2', title: '第二課：我爸爸做生意', titleEn: 'Lesson 2: My Dad Does Business', sentences: [ { text: "張莉，照片裡面的人是誰？", zhuyinStr: "ㄓㄤ ㄌㄧˋ _ ㄓㄠˋ ㄆㄧㄢˋ ㄌㄧˇ ㄇㄧㄢˋ ㄉㄜ˙ ㄖㄣˊ ㄕˋ ㄕㄟˊ _" }, { text: "左邊是我外公，他以前是醫生，右邊是我外婆。", zhuyinStr: "ㄗㄨㄛˇ ㄅㄧㄢ ㄕˋ ㄨㄛˇ ㄨㄞˋ ㄍㄨㄥ _ ㄊㄚ ㄧˇ ㄑㄧㄢˊ ㄕˋ ㄧ ㄕㄥ _ ㄧㄡˋ ㄅㄧㄢ ㄕˋ ㄨㄛˇ ㄨㄞˋ ㄆㄛˊ _" }, { text: "你爸爸媽媽做什麼工作？", zhuyinStr: "ㄋㄧˇ ㄅㄚˋ ㄅㄚ˙ ㄇㄚ ㄇㄚ˙ ㄗㄨㄛˋ ㄕㄣˊ ㄇㄜ˙ ㄍㄨㄥ ㄗㄨㄛˋ _" }, { text: "我爸爸做生意，我媽媽幫他。你爸爸媽媽呢？", zhuyinStr: "ㄨㄛˇ ㄅㄚˋ ㄅㄚ˙ ㄗㄨㄛˋ ㄕㄥ ㄧˋ _ ㄨㄛˇ ㄇㄚ ㄇㄚ˙ ㄅㄤ ㄊㄚ _ ㄋㄧˇ ㄅㄚˋ ㄅㄚ˙ ㄇㄚ ㄇㄚ˙ ㄋㄜ˙ _" }, { text: "我爸爸在電腦公司上班，我媽媽在銀行工作。", zhuyinStr: "ㄨㄛˇ ㄅㄚˋ ㄅㄚ˙ ㄗㄞˋ ㄉㄧㄢˋ ㄋㄠˇ ㄍㄨㄥ ㄙ ㄕㄤˋ ㄅㄢ _ ㄨㄛˇ ㄇㄚ ㄇㄚ˙ ㄗㄞˋ ㄧㄣˊ ㄏㄤˊ ㄍㄨㄥ ㄗㄨㄛˋ _" }, { text: "你以後想做什麼？", zhuyinStr: "ㄋㄧˇ ㄧˇ ㄏㄡˋ ㄒㄧㄤˇ ㄗㄨㄛˋ ㄕㄣˊ ㄇㄜ˙ _" }, { text: "我以後想跟爸爸一樣。", zhuyinStr: "ㄨㄛˇ ㄧˇ ㄏㄡˋ ㄒㄧㄤˇ ㄍㄣ ㄅㄚˋ ㄅㄚ˙ ㄧˊ ㄧㄤˋ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) },
-      { id: 'L3', title: '第三課：去超級市場', titleEn: 'Lesson 3: Going to the Supermarket', sentences: [ { text: "媽媽，你要去哪裡？", zhuyinStr: "ㄇㄚ ㄇㄚ˙ _ ㄋㄧˇ ㄧㄠˋ ㄑㄩˋ ㄋㄚˇ ㄌㄧˇ _" }, { text: "我要去附近的超級市場買東西，你要跟我一起去嗎？", zhuyinStr: "ㄨㄛˇ ㄧㄠˋ ㄑㄩˋ ㄈㄨˋ ㄐㄧㄣˋ ㄉㄜ˙ ㄔㄠ ㄐㄧˊ ㄕˋ ㄔㄤˇ ㄇㄞˇ ㄉㄨㄥ ㄒㄧ _ ㄋㄧˇ ㄧㄠˋ ㄍㄣ ㄨㄛˇ ㄧˋ ㄑㄧˇ ㄑㄩˋ ㄇㄚ˙ _" }, { text: "要，我想去買巧克力冰淇淋。", zhuyinStr: "ㄧㄠˋ _ ㄨㄛˇ ㄒㄧㄤˇ ㄑㄩˋ ㄇㄞˇ ㄑㄧㄠˇ ㄎㄜˋ ㄌㄧˋ ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ _" }, { text: "你今天要買什麼？", zhuyinStr: "ㄋㄧˇ ㄐㄧㄣ ㄊㄧㄢ ㄧㄠˋ ㄇㄞˇ ㄕㄣˊ ㄇㄜ˙ _" }, { text: "我今天要買魚、牛肉、青菜，還要買米。", zhuyinStr: "ㄨㄛˇ ㄐㄧㄣ ㄊㄧㄢ ㄧㄠˋ ㄇㄞˇ ㄩˊ _ ㄋㄧㄡˊ ㄖㄡˋ _ ㄑㄧㄥ ㄘㄞˋ _ ㄏㄞˊ ㄧㄠˋ ㄇㄞˇ ㄇㄧˇ _" }, { text: "我也可以買糖果嗎？", zhuyinStr: "ㄨㄛˇ ㄧㄝˇ ㄎㄜˇ ㄧˇ ㄇㄞˇ ㄊㄤˊ ㄍㄨㄛˇ ㄇㄚ˙ _" }, { text: "我們去看一下吧！", zhuyinStr: "ㄨㄛˇ ㄇㄣ˙ ㄑㄩˋ ㄎㄢˋ ㄧˊ ㄒㄧㄚˋ ㄅㄚ˙ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) },
-      { id: 'L4', title: '第四課：我想吃漢堡', titleEn: 'Lesson 4: I Want a Hamburger', sentences: [ { text: "我想吃漢堡跟薯條，我們可不可以出去吃？", zhuyinStr: "ㄨㄛˇ ㄒㄧㄤˇ ㄔ ㄏㄢˋ ㄅㄠˇ ㄍㄣ ㄕㄨˇ ㄊㄧㄠˊ _ ㄨㄛˇ ㄇㄣ˙ ㄎㄜˇ ㄅㄨˋ ㄎㄜˇ ㄧˇ ㄔㄨ ㄑㄩˋ ㄔ _" }, { text: "今天先在家吃，週末再出去吃吧！", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ ㄒㄧㄢ ㄗㄞˋ ㄐㄧㄚ ㄔ _ ㄓㄡ ㄇㄛˋ ㄗㄞˋ ㄔㄨ ㄑㄩˋ ㄔ ㄅㄚ˙ _" }, { text: "今天晚餐想吃什麼？", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ ㄨㄢˇ ㄘㄢ ㄒㄧㄤˇ ㄔ ㄕㄣˊ ㄇㄜ˙ _" }, { text: "我想吃麵。文文，你呢？", zhuyinStr: "ㄨㄛˇ ㄒㄧㄤˇ ㄔ ㄇㄧㄢˋ _ ㄨㄣˊ ㄨㄣˊ _ ㄋㄧˇ ㄋㄜ˙ _" }, { text: "我想吃蛋炒飯，有湯嗎？", zhuyinStr: "ㄨㄛˇ ㄒㄧㄤˇ ㄔ ㄉㄢˋ ㄔㄠˇ ㄈㄢˋ _ ㄧㄡˇ ㄊㄤ ㄇㄚ˙ _" }, { text: "我已經做了玉米湯。", zhuyinStr: "ㄨㄛˇ ㄧˇ ㄐㄧㄥ ㄗㄨㄛˋ ㄌㄜ˙ ㄩˋ ㄇㄧˇ ㄊㄤ _" }, { text: "媽，我現在很餓，想快點吃晚飯，好嗎？", zhuyinStr: "ㄇㄚ _ ㄨㄛˇ ㄒㄧㄢˋ ㄗㄞˋ ㄏㄣˇ ㄜˋ _ ㄒㄧㄤˇ ㄎㄨㄞˋ ㄉㄧㄢˇ ㄔ ㄨㄢˇ ㄈㄢˋ _ ㄏㄠˇ ㄇㄚ˙ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) },
-      { id: 'L5', title: '第五課：春天快到了', titleEn: 'Lesson 5: Spring is Coming', sentences: [ { text: "你看！樹葉變黃了，秋天快到了。", zhuyinStr: "ㄋㄧˇ ㄎㄢˋ _ ㄕㄨˋ ㄧㄝˋ ㄅㄧㄢˋ ㄏㄨㄤˊ ㄌㄜ˙ _ ㄑㄧㄡ ㄊㄧㄢ ㄎㄨㄞˋ ㄉㄠˋ ㄌㄜ˙ _" }, { text: "可是草還是綠色的。", zhuyinStr: "ㄎㄜˇ ㄕˋ ㄘㄠˇ ㄏㄞˊ ㄕˋ ㄌㄩˋ ㄙㄜˋ ㄉㄜ˙ _" }, { text: "秋天天氣很好，我覺得很舒服。", zhuyinStr: "ㄑㄧㄡ ㄊㄧㄢ ㄊㄧㄢ ㄑㄧˋ ㄏㄣˇ ㄏㄠˇ _ ㄨㄛˇ ㄐㄩㄝˊ ㄉㄜ˙ ㄏㄣˇ ㄕㄨ ㄈㄨˊ _" }, { text: "春天也不錯。", zhuyinStr: "ㄔㄨㄣ ㄊㄧㄢ ㄧㄝˇ ㄅㄨˊ ㄘㄨㄛˋ _" }, { text: "春天的時候，我們家院子有很多顏色的花。", zhuyinStr: "ㄔㄨㄣ ㄊㄧㄢ ㄉㄜ˙ ㄕˊ ㄏㄡˋ _ ㄨㄛˇ ㄇㄣ˙ ㄐㄧㄚ ㄩㄢˋ ㄗ˙ ㄧㄡˇ ㄏㄣˇ ㄉㄨㄛ ㄧㄢˊ ㄙㄜˋ ㄉㄜ˙ ㄏㄨㄚ _" }, { text: "紅色的、白色的都有。", zhuyinStr: "ㄏㄨㄥˊ ㄙㄜˋ ㄉㄜ˙ _ ㄅㄞˊ ㄙㄜˋ ㄉㄜ˙ ㄉㄡ ㄧㄡˇ _" }, { text: "我覺得紅色的花最漂亮。", zhuyinStr: "ㄨㄛˇ ㄐㄩㄝˊ ㄉㄜ˙ ㄏㄨㄥˊ ㄙㄜˋ ㄉㄜ˙ ㄏㄨㄚ ㄗㄨㄟˋ ㄆㄧㄠˋ ㄌㄧㄤˋ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) },
-      { id: 'L6', title: '第六課：農曆新年', titleEn: 'Lesson 6: Lunar New Year', sentences: [ { text: "老師說農曆新年快到了。", zhuyinStr: "ㄌㄠˇ ㄕ ㄕㄨㄛ ㄋㄨㄥˊ ㄌㄧˋ ㄒㄧㄣ ㄋㄧㄢˊ ㄎㄨㄞˋ ㄉㄠˋ ㄌㄜ˙ _" }, { text: "對，下個星期五是農曆新年。", zhuyinStr: "ㄉㄨㄟˋ _ ㄒㄧㄚˋ ㄍㄜ˙ ㄒㄧㄥ ㄑㄧ ㄨˇ ㄕˋ ㄋㄨㄥˊ ㄌㄧˋ ㄒㄧㄣ ㄋㄧㄢˊ _" }, { text: "媽媽會去華人超市買年糕嗎？", zhuyinStr: "ㄇㄚ ㄇㄚ˙ ㄏㄨㄟˋ ㄑㄩˋ ㄏㄨㄚˊ ㄖㄣˊ ㄔㄠ ㄕˋ ㄇㄞˇ ㄋㄧㄢˊ ㄍㄠ ㄇㄚ˙ _" }, { text: "會，那天我們還要給爺爺奶奶拜年。", zhuyinStr: "ㄏㄨㄟˋ _ ㄋㄚˋ ㄊㄧㄢ ㄨㄛˇ ㄇㄣ˙ ㄏㄞˊ ㄧㄠˋ ㄍㄟˇ ㄧㄝˊ ㄧㄝ˙ ㄋㄞˇ ㄋㄞ˙ ㄅㄞˋ ㄋㄧㄢˊ _" }, { text: "太好了，爺爺每年都會給我紅包。", zhuyinStr: "ㄊㄞˋ ㄏㄠˇ ㄌㄜ˙ _ ㄧㄝˊ ㄧㄝ˙ ㄇㄟˇ ㄋㄧㄢˊ ㄉㄡ ㄏㄨㄟˋ ㄍㄟˇ ㄨㄛˇ ㄏㄨㄥˊ ㄅㄠ _" }, { text: "如果在臺灣，我們還會貼春聯、放鞭炮。", zhuyinStr: "ㄖㄨˊ ㄍㄨㄛˇ ㄗㄞˋ ㄊㄞˊ ㄨㄢ _ ㄨㄛˇ ㄇㄣ˙ ㄏㄞˊ ㄏㄨㄟˋ ㄊㄧㄝ ㄔㄨㄣ ㄌㄧㄢˊ _ ㄈㄤˋ ㄅㄧㄢ ㄆㄠˋ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) },
-      { id: 'L7', title: '第七課：早一點睡覺', titleEn: 'Lesson 7: Go to Sleep Earlier', sentences: [ { text: "大文，該起床了！來不及了！", zhuyinStr: "ㄉㄚˋ ㄨㄣˊ _ ㄍㄞ ㄑㄧˇ ㄔㄨㄤˊ ㄌㄜ˙ _ ㄌㄞˊ ㄅㄨˋ ㄐㄧˊ ㄌㄜ˙ _" }, { text: "我很累，還想睡覺。", zhuyinStr: "ㄨㄛˇ ㄏㄣˇ ㄌㄟˋ _ ㄏㄞˊ ㄒㄧㄤˇ ㄕㄨㄟˋ ㄐㄧㄠˋ _" }, { text: "今天晚上早一點睡，現在趕快去刷牙、洗澡。", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ ㄨㄢˇ ㄕㄤˋ ㄗㄠˇ ㄧˋ ㄉㄧㄢˇ ㄕㄨㄟˋ _ ㄒㄧㄢˋ ㄗㄞˋ ㄍㄢˇ ㄎㄨㄞˋ ㄑㄩˋ ㄕㄨㄚ ㄧㄚˊ _ ㄒㄧˇ ㄗㄠˇ _" }, { text: "我昨天晚上洗過澡了。", zhuyinStr: "ㄨㄛˇ ㄗㄨㄛˊ ㄊㄧㄢ ㄨㄢˇ ㄕㄤˋ ㄒㄧˇ ㄍㄨㄛˋ ㄗㄠˇ ㄌㄜ˙ _" }, { text: "還有，別忘了用肥皂洗臉。", zhuyinStr: "ㄏㄞˊ ㄧㄡˇ _ ㄅㄧㄝˊ ㄨㄤˋ ㄌㄜ˙ ㄩㄥˋ ㄈㄟˊ ㄗㄠˋ ㄒㄧˇ ㄌㄧㄢˇ _" }, { text: "我知道了，要洗乾淨。", zhuyinStr: "ㄨㄛˇ ㄓ ㄉㄠˋ ㄌㄜ˙ _ ㄧㄠˋ ㄒㄧˇ ㄍㄢ ㄐㄧㄥˋ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) },
-      { id: 'L8', title: '第八課：我的寵物', titleEn: 'Lesson 8: My Pet', sentences: [ { text: "昨天我爸爸的朋友送給我一隻狗，你們家有寵物嗎？", zhuyinStr: "ㄗㄨㄛˊ ㄊㄧㄢ ㄨㄛˇ ㄅㄚˋ ㄅㄚ˙ ㄉㄜ˙ ㄆㄥˊ ㄧㄡˇ ㄙㄨㄥˋ ㄍㄟˇ ㄨㄛˇ ㄧˋ ㄓ ㄍㄡˇ _ ㄋㄧˇ ㄇㄣ˙ ㄐㄧㄚ ㄧㄡˇ ㄔㄨㄥˇ ㄨˋ ㄇㄚ˙ _" }, { text: "有，我家有兩隻狗，我每天都帶牠們去散步。", zhuyinStr: "ㄧㄡˇ _ ㄨㄛˇ ㄐㄧㄚ ㄧㄡˇ ㄌㄧㄤˇ ㄓ ㄍㄡˇ _ ㄨㄛˇ ㄇㄟˇ ㄊㄧㄢ ㄉㄡ ㄉㄞˋ ㄊㄚ ㄇㄣ˙ ㄑㄩˋ ㄙㄢˋ ㄅㄨˋ _" }, { text: "張莉，你養過狗嗎？", zhuyinStr: "ㄓㄤ ㄌㄧˋ _ ㄋㄧˇ ㄧㄤˇ ㄍㄨㄛˋ ㄍㄡˇ ㄇㄚ˙ _" }, { text: "我沒養過狗，我去年養了一隻貓，可是上個月不見了。", zhuyinStr: "ㄨㄛˇ ㄇㄟˊ ㄧㄤˇ ㄍㄨㄛˋ ㄍㄡˇ _ ㄨㄛˇ ㄑㄩˋ ㄋㄧㄢˊ ㄧㄤˇ ㄌㄜ˙ ㄧˋ ㄓ ㄇㄠ _ ㄎㄜˇ ㄕˋ ㄕㄤˋ ㄍㄜ˙ ㄩㄝˋ ㄅㄨˊ ㄐㄧㄢˋ ㄌㄜ˙ _" }, { text: "我也養過貓，非常可愛，我每天都餵牠。", zhuyinStr: "ㄨㄛˇ ㄧㄝˇ ㄧㄤˇ ㄍㄨㄛˋ ㄇㄠ _ ㄈㄟ ㄔㄤˊ ㄎㄜˇ ㄞˋ _ ㄨㄛˇ ㄇㄟˇ ㄊㄧㄢ ㄉㄡ ㄨㄟˋ ㄊㄚ _" }, { text: "以後我想養一隻兔子。", zhuyinStr: "ㄧˇ ㄏㄡˋ ㄨㄛˇ ㄒㄧㄤˇ ㄧㄤˇ ㄧˋ ㄓ ㄊㄨˋ ㄗ˙ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) },
-      { id: 'L9', title: '第九課：音樂教室在北方', titleEn: 'Lesson 9: Music Room is in the North', sentences: [ { text: "東明，這是什麼？", zhuyinStr: "ㄉㄨㄥ ㄇㄧㄥˊ _ ㄓㄜˋ ㄕˋ ㄕㄣˊ ㄇㄜ˙ _" }, { text: "指南針，也叫指北針，它告訴我們南方和北方在哪裡。", zhuyinStr: "ㄓˇ ㄋㄢˊ ㄓㄣ _ ㄧㄝˇ ㄐㄧㄠˋ ㄓˇ ㄅㄟˇ ㄓㄣ _ ㄊㄚ ㄍㄠˋ ㄙㄨˋ ㄨㄛˇ ㄇㄣ˙ ㄋㄢˊ ㄈㄤ ㄏㄢˋ ㄅㄟˇ ㄈㄤ ㄗㄞˋ ㄋㄚˇ ㄌㄧˇ _" }, { text: "音樂教室是什麼方向？", zhuyinStr: "ㄧㄣ ㄩㄝˋ ㄐㄧㄠˋ ㄕˋ ㄕˋ ㄕㄣˊ ㄇㄜ˙ ㄈㄤ ㄒㄧㄤˋ _" }, { text: "音樂教室在北方，校門口在南方。", zhuyinStr: "ㄧㄣ ㄩㄝˋ ㄐㄧㄠˋ ㄕˋ ㄗㄞˋ ㄅㄟˇ ㄈㄤ _ ㄒㄧㄠˋ ㄇㄣˊ ㄎㄡˇ ㄗㄞˋ ㄋㄢˊ ㄈㄤ _" }, { text: "足球場在東方，還是西方？", zhuyinStr: "ㄗㄨˊ ㄑㄧㄡˊ ㄔㄤˇ ㄗㄞˋ ㄉㄨㄥ ㄈㄤ _ ㄏㄞˊ ㄕˋ ㄒㄧ ㄈㄤ _" }, { text: "因為音樂教室在北方，所以足球場在東方。", zhuyinStr: "ㄧㄣ ㄨㄟˋ ㄧㄣ ㄩㄝˋ ㄐㄧㄠˋ ㄕˋ ㄗㄞˋ ㄅㄟˇ ㄈㄤ _ ㄙㄨㄛˇ ㄧˇ ㄗㄨˊ ㄑㄧㄡˊ ㄔㄤˇ ㄗㄞˋ ㄉㄨㄥ ㄈㄤ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) },
-      { id: 'L10', title: '第十課：外公外婆住在臺灣', titleEn: 'Lesson 10: Grandparents Live in Taiwan', sentences: [ { text: "暑假的時候，我會去臺灣看外公、外婆。", zhuyinStr: "ㄕㄨˇ ㄐㄧㄚˋ ㄉㄜ˙ ㄕˊ ㄏㄡˋ _ ㄨㄛˇ ㄏㄨㄟˋ ㄑㄩˋ ㄊㄞˊ ㄨㄢ ㄎㄢˋ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ _" }, { text: "你外公、外婆家在哪裡？", zhuyinStr: "ㄋㄧˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄐㄧㄚ ㄗㄞˋ ㄋㄚˇ ㄌㄧˇ _" }, { text: "他們本來住在臺北，退休以後，跟我的舅舅住在臺南。", zhuyinStr: "ㄊㄚ ㄇㄣ˙ ㄅㄣˇ ㄌㄞˊ ㄓㄨˋ ㄗㄞˋ ㄊㄞˊ ㄅㄟˇ _ ㄊㄨㄟˋ ㄒㄧㄡ ㄧˇ ㄏㄡˋ _ ㄍㄣ ㄨㄛˇ ㄉㄜ˙ ㄐㄧㄡˋ ㄐㄧㄡ˙ ㄓㄨˋ ㄗㄞˋ ㄊㄞˊ ㄋㄢˊ _" }, { text: "你們每年都去看外公、外婆嗎？", zhuyinStr: "ㄋㄧˇ ㄇㄣ˙ ㄇㄟˇ ㄋㄧㄢˊ ㄉㄡ ㄑㄩˋ ㄎㄢˋ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄇㄚ˙ _" }, { text: "我們每年都去看他們一次，你外公、外婆住在哪裡？", zhuyinStr: "ㄨㄛˇ ㄇㄣ˙ ㄇㄟˇ ㄋㄧㄢˊ ㄉㄡ ㄑㄩˋ ㄎㄢˋ ㄊㄚ ㄇㄣ˙ ㄧˊ ㄘˋ _ ㄋㄧˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄓㄨˋ ㄗㄞˋ ㄋㄚˇ ㄌㄧˇ _" }, { text: "我外公、外婆現在住在紐約，他們下個月會來看我們。", zhuyinStr: "ㄨㄛˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄒㄧㄢˋ ㄗㄞˋ ㄓㄨˋ ㄗㄞˋ ㄋㄧㄡˇ ㄩㄝ _ ㄊㄚ ㄇㄣ˙ ㄒㄧㄚˋ ㄍㄜ˙ ㄩㄝˋ ㄏㄨㄟˋ ㄌㄞˋ ㄎㄢˋ ㄨㄛˇ ㄇㄣ˙ _" }, { text: "我外公、外婆喜歡旅行，常常來看我們，也常去法國看阿姨。", zhuyinStr: "ㄨㄛˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄒㄧˇ ㄏㄨㄢ ㄌㄩˇ ㄒㄧㄥˊ _ ㄔㄤˊ ㄔㄤˊ ㄌㄞˋ ㄎㄢˋ ㄨㄛˇ ㄇㄣ˙ _ ㄧㄝˇ ㄔㄤˊ ㄑㄩˋ ㄈㄚˇ ㄍㄨㄛˊ ㄎㄢˋ ㄚ ㄧˊ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) },
-      { id: 'L11', title: '第十一課：去動物園', titleEn: 'Lesson 11: Going to the Zoo', sentences: [ { text: "下個星期五，學校要帶我們去動物園玩。", zhuyinStr: "ㄒㄧㄚˋ ㄍㄜ˙ ㄒㄧㄥ ㄑㄧ ㄨˇ _ ㄒㄩㄝˊ ㄒㄧㄠˋ ㄧㄠˋ ㄉㄞˋ ㄨㄛˇ ㄇㄣ˙ ㄑㄩˋ ㄉㄨㄥˋ ㄨˋ ㄩㄢˊ ㄨㄢˊ _" }, { text: "太好了！你可以看到你喜歡的大象和老虎。", zhuyinStr: "ㄊㄞˋ ㄏㄠˇ ㄌㄜ˙ _ ㄋㄧˇ ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄋㄧˇ ㄒㄧˇ ㄏㄨㄢ ㄉㄜ˙ ㄉㄚˋ ㄒㄧㄤˋ ㄏㄢˋ ㄌㄠˇ ㄏㄨˇ _" }, { text: "這一次我希望可以看到熊貓和猴子。", zhuyinStr: "ㄓㄜˋ ㄧˊ ㄘˋ ㄨㄛˇ ㄒㄧ ㄨㄤˋ ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄒㄩㄥˊ ㄇㄠ ㄏㄢˋ ㄏㄡˊ ㄗ˙ _" }, { text: "對，以前我去的時候，動物園沒有熊貓。", zhuyinStr: "ㄉㄨㄟˋ _ ㄧˇ ㄑㄧㄢˊ ㄨㄛˇ ㄑㄩˋ ㄉㄜ˙ ㄕˊ ㄏㄡˋ _ ㄉㄨㄥˋ ㄨˋ ㄩㄢˊ ㄇㄟˊ ㄧㄡˇ ㄒㄩㄥˊ ㄇㄠ _" }, { text: "現在不但有熊貓，還有企鵝。", zhuyinStr: "ㄒㄧㄢˋ ㄗㄞˋ ㄅㄨˊ ㄉㄢˋ ㄧㄡˇ ㄒㄩㄥˊ ㄇㄠ _ ㄏㄞˊ ㄧㄡˇ ㄑㄧˋ ㄜˊ _" }, { text: "我覺得熊貓胖胖的，真可愛！", zhuyinStr: "ㄨㄛˇ ㄐㄩㄝˊ ㄉㄜ˙ ㄒㄩㄥˊ ㄇㄠ ㄆㄤˋ ㄆㄤˋ ㄉㄜ˙ _ ㄓㄣ ㄎㄜˇ ㄞˋ _" }, { text: "我喜歡長頸鹿，脖子長長的。", zhuyinStr: "ㄨㄛˇ ㄒㄧˇ ㄏㄨㄢ ㄔㄤˊ ㄐㄧㄥˇ ㄌㄨˋ _ ㄅㄛˊ ㄗ˙ ㄔㄤˊ ㄔㄤˊ ㄉㄜ˙ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) },
-      { id: 'L12', title: '第十二課：打網路電話', titleEn: 'Lesson 12: Making an Internet Call', sentences: [ { text: "大文，我現在要用網路給姑姑打電話。", zhuyinStr: "ㄉㄚˋ ㄨㄣˊ _ ㄨㄛˇ ㄒㄧㄢˋ ㄗㄞˋ ㄧㄠˋ ㄩㄥˋ ㄨㄤˇ ㄌㄨˋ ㄍㄟˇ ㄍㄨ ㄍㄨ ㄉㄚˇ ㄉㄧㄢˋ ㄏㄨㄚˋ _" }, { text: "可以看到姑姑嗎？我很久沒跟姑姑說話了。", zhuyinStr: "ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄍㄨ ㄍㄨ ㄇㄚ˙ _ ㄨㄛˇ ㄏㄣˇ ㄐㄧㄡˇ ㄇㄟˊ ㄍㄣ ㄍㄨ ㄍㄨ ㄕㄨㄛ ㄏㄨㄚˋ ㄌㄜ˙ _" }, { text: "可以看到她的影像，快一點過來。", zhuyinStr: "ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄊㄚ ㄉㄜ˙ ㄧㄥˇ ㄒㄧㄤˋ _ ㄎㄨㄞˋ ㄧˋ ㄉㄧㄢˋ ㄍㄨㄛˋ ㄌㄞˊ _" }, { text: "大文，你看起來瘦了。", zhuyinStr: "ㄉㄚˋ ㄨㄣˊ _ ㄋㄧˇ ㄎㄢˋ ㄑㄧˇ ㄌㄞˊ ㄕㄡˋ ㄌㄜ˙ _" }, { text: "我沒瘦，我長高了。", zhuyinStr: "ㄨㄛˇ ㄇㄟˊ ㄕㄡˋ _ ㄨㄛˇ ㄓㄤˇ ㄍㄠ ㄌㄜ˙ _" }, { text: "文文現在也跟你一起去學華語嗎？", zhuyinStr: "ㄨㄣˊ ㄨㄣˊ ㄒㄧㄢˋ ㄗㄞˋ ㄧㄝˇ ㄍㄣ ㄋㄧˇ ㄧˋ ㄑㄧˇ ㄑㄩˋ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ ㄇㄚ˙ _" }, { text: "是啊！上華語課很有意思。", zhuyinStr: "ㄕˋ ㄚ _ ㄕㄤˋ ㄏㄨㄚˊ ㄩˇ ㄎㄜˋ ㄏㄣˇ ㄧㄡˇ ㄧˋ ㄙ˙ _" }, { text: "你好好學華語，以後可以用網路給我寫信。", zhuyinStr: "ㄋㄧˇ ㄏㄠˇ ㄏㄠˇ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ _ ㄧˇ ㄏㄡˋ ㄎㄜˇ ㄧˇ ㄩㄥˋ ㄨㄤˇ ㄌㄨˋ ㄍㄟˇ ㄨㄛˇ ㄒㄧㄝˇ ㄒㄧㄣˋ _" }, { text: "沒問題，我一定會好好學華語。", zhuyinStr: "ㄇㄟˊ ㄨㄣˋ ㄊㄧˊ _ ㄨㄛˇ ㄧˊ ㄉㄧㄥˋ ㄏㄨㄟˋ ㄏㄠˇ ㄏㄠˇ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' ') })) }
+      { id: 'L1', title: '第一課：新同學', titleEn: 'Lesson 1: New Classmates', sentences: [ { text: "今天，我們有兩個新同學，現在請他們介紹自己。", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ _ ㄨㄛˇ ㄇㄣ˙ ㄧㄡˇ ㄌㄧㄤˇ ㄍㄜ˙ ㄒㄧㄣ ㄊㄨㄥˊ ㄒㄩㄝˊ _ ㄒㄧㄢˋ ㄗㄞˋ ㄑㄧㄥˇ ㄊㄚ ㄇㄣ˙ ㄐㄧㄝˋ ㄕㄠˋ ㄗˋ ㄐㄧˇ _", pinyinStr: "jīn tiān _ wǒ men yǒu liǎng ge xīn tóng xué _ xiàn zài qǐng tā men jiè shào zì jǐ _" }, { text: "大家好，我叫方友朋，今年八歲，我最喜歡跟爸爸一起游泳。", zhuyinStr: "ㄉㄚˋ ㄐㄧㄚ ㄏㄠˇ _ ㄨㄛˇ ㄐㄧㄠˋ ㄈㄤ ㄧㄡˇ ㄆㄥˊ _ ㄐㄧㄣ ㄋㄧㄢˊ ㄅㄚ ㄙㄨㄟˋ _ ㄨㄛˇ ㄗㄨㄟˋ ㄒㄧˇ ㄏㄨㄢ ㄍㄣ ㄅㄚˋ ㄅㄚ˙ ㄧˋ ㄑㄧˇ ㄧㄡˊ ㄩㄥˇ _", pinyinStr: "dà jiā hǎo _ wǒ jiào fāng yǒu péng _ jīn nián bā suì _ wǒ zuì xǐ huān gēn bà ba yì qǐ yóu yǒng _" }, { text: "大家好，我叫張莉，今年七歲，我比較喜歡看書。", zhuyinStr: "ㄉㄚˋ ㄐㄧㄚ ㄏㄠˇ _ ㄨㄛˇ ㄐㄧㄠˋ ㄓㄤ ㄌㄧˋ _ ㄐㄧㄣ ㄋㄧㄢˊ ㄑㄧ ㄙㄨㄟˋ _ ㄨㄛˇ ㄅㄧˇ ㄐㄧㄠˋ ㄒㄧˇ ㄏㄨㄢ ㄎㄢˋ ㄕㄨ _", pinyinStr: "dà jiā hǎo _ wǒ jiào zhāng lì _ jīn nián qī suì _ wǒ bǐ jiào xǐ huān kàn shū _" }, { text: "你們好，我叫李大文。很高興認識你們。", zhuyinStr: "ㄋㄧˇ ㄇㄣ˙ ㄏㄠˇ _ ㄨㄛˇ ㄐㄧㄠˋ ㄌㄧˇ ㄉㄚˋ ㄨㄣˊ _ ㄏㄣˇ ㄍㄠ ㄒㄧㄥˋ ㄖㄣˋ ㄕ˙ ㄋㄧˇ ㄇㄣ˙ _", pinyinStr: "nǐ men hǎo _ wǒ jiào lǐ dà wén _ hěn gāo xìng rèn shi nǐ men _" }, { text: "歡迎你們來中文學校學華語。", zhuyinStr: "ㄏㄨㄢ ㄧㄥˊ ㄋㄧˇ ㄇㄣ˙ ㄌㄞˊ ㄓㄨㄥ ㄨㄣˊ ㄒㄩㄝˊ ㄒㄧㄠˋ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ _", pinyinStr: "huān yíng nǐ men lái zhōng wén xué xiào xué huá yǔ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) },
+      { id: 'L2', title: '第二課：我爸爸做生意', titleEn: 'Lesson 2: My Dad Does Business', sentences: [ { text: "張莉，照片裡面的人是誰？", zhuyinStr: "ㄓㄤ ㄌㄧˋ _ ㄓㄠˋ ㄆㄧㄢˋ ㄌㄧˇ ㄇㄧㄢˋ ㄉㄜ˙ ㄖㄣˊ ㄕˋ ㄕㄟˊ _", pinyinStr: "zhāng lì _ zhào piàn lǐ miàn de rén shì shéi _" }, { text: "左邊是我外公，他以前是醫生，右邊是我外婆。", zhuyinStr: "ㄗㄨㄛˇ ㄅㄧㄢ ㄕˋ ㄨㄛˇ ㄨㄞˋ ㄍㄨㄥ _ ㄊㄚ ㄧˇ ㄑㄧㄢˊ ㄕˋ ㄧ ㄕㄥ _ ㄧㄡˋ ㄅㄧㄢ ㄕˋ ㄨㄛˇ ㄨㄞˋ ㄆㄛˊ _", pinyinStr: "zuǒ biān shì wǒ wài gōng _ tā yǐ qián shì yī shēng _ yòu biān shì wǒ wài pó _" }, { text: "你爸爸媽媽做什麼工作？", zhuyinStr: "ㄋㄧˇ ㄅㄚˋ ㄅㄚ˙ ㄇㄚ ㄇㄚ˙ ㄗㄨㄛˋ ㄕㄣˊ ㄇㄜ˙ ㄍㄨㄥ ㄗㄨㄛˋ _", pinyinStr: "nǐ bà ba mā ma zuò shén me gōng zuò _" }, { text: "我爸爸做生意，我媽媽幫他。你爸爸媽媽呢？", zhuyinStr: "ㄨㄛˇ ㄅㄚˋ ㄅㄚ˙ ㄗㄨㄛˋ ㄕㄥ ㄧˋ _ ㄨㄛˇ ㄇㄚ ㄇㄚ˙ ㄅㄤ ㄊㄚ _ ㄋㄧˇ ㄅㄚˋ ㄅㄚ˙ ㄇㄚ ㄇㄚ˙ ㄋㄜ˙ _", pinyinStr: "wǒ bà ba zuò shēng yì _ wǒ mā ma bāng tā _ nǐ bà ba mā ma ne _" }, { text: "我爸爸在電腦公司上班，我媽媽在銀行工作。", zhuyinStr: "ㄨㄛˇ ㄅㄚˋ ㄅㄚ˙ ㄗㄞˋ ㄉㄧㄢˋ ㄋㄠˇ ㄍㄨㄥ ㄙ ㄕㄤˋ ㄅㄢ _ ㄨㄛˇ ㄇㄚ ㄇㄚ˙ ㄗㄞˋ ㄧㄣˊ ㄏㄤˊ ㄍㄨㄥ ㄗㄨㄛˋ _", pinyinStr: "wǒ bà ba zài diàn nǎo gōng sī shàng bān _ wǒ mā ma zài yín háng gōng zuò _" }, { text: "你以後想做什麼？", zhuyinStr: "ㄋㄧˇ ㄧˇ ㄏㄡˋ ㄒㄧㄤˇ ㄗㄨㄛˋ ㄕㄣˊ ㄇㄜ˙ _", pinyinStr: "nǐ yǐ hòu xiǎng zuò shén me _" }, { text: "我以後想跟爸爸一樣。", zhuyinStr: "ㄨㄛˇ ㄧˇ ㄏㄡˋ ㄒㄧㄤˇ ㄍㄣ ㄅㄚˋ ㄅㄚ˙ ㄧˊ ㄧㄤˋ _", pinyinStr: "wǒ yǐ hòu xiǎng gēn bà ba yí yàng _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) },
+      { id: 'L3', title: '第三課：去超級市場', titleEn: 'Lesson 3: Going to the Supermarket', sentences: [ { text: "媽媽，你要去哪裡？", zhuyinStr: "ㄇㄚ ㄇㄚ˙ _ ㄋㄧˇ ㄧㄠˋ ㄑㄩˋ ㄋㄚˇ ㄌㄧˇ _", pinyinStr: "mā ma _ nǐ yào qù nǎ lǐ _" }, { text: "我要去附近的超級市場買東西，你要跟我一起去嗎？", zhuyinStr: "ㄨㄛˇ ㄧㄠˋ ㄑㄩˋ ㄈㄨˋ ㄐㄧㄣˋ ㄉㄜ˙ ㄔㄠ ㄐㄧˊ ㄕˋ ㄔㄤˇ ㄇㄞˇ ㄉㄨㄥ ㄒㄧ _ ㄋㄧˇ ㄧㄠˋ ㄍㄣ ㄨㄛˇ ㄧˋ ㄑㄧˇ ㄑㄩˋ ㄇㄚ˙ _", pinyinStr: "wǒ yào qù fù jìn de chāo jí shì chǎng mǎi dōng xi _ nǐ yào gēn wǒ yì qǐ qù ma _" }, { text: "要，我想去買巧克力冰淇淋。", zhuyinStr: "ㄧㄠˋ _ ㄨㄛˇ ㄒㄧㄤˇ ㄑㄩˋ ㄇㄞˇ ㄑㄧㄠˇ ㄎㄜˋ ㄌㄧˋ ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ _", pinyinStr: "yào _ wǒ xiǎng qù mǎi qiǎo kè lì bīng qí lín _" }, { text: "你今天要買什麼？", zhuyinStr: "ㄋㄧˇ ㄐㄧㄣ ㄊㄧㄢ ㄧㄠˋ ㄇㄞˇ ㄕㄣˊ ㄇㄜ˙ _", pinyinStr: "nǐ jīn tiān yào mǎi shén me _" }, { text: "我今天要買魚、牛肉、青菜，還要買米。", zhuyinStr: "ㄨㄛˇ ㄐㄧㄣ ㄊㄧㄢ ㄧㄠˋ ㄇㄞˇ ㄩˊ _ ㄋㄧㄡˊ ㄖㄡˋ _ ㄑㄧㄥ ㄘㄞˋ _ ㄏㄞˊ ㄧㄠˋ ㄇㄞˇ ㄇㄧˇ _", pinyinStr: "wǒ jīn tiān yào mǎi yú _ niú ròu _ qīng cài _ hái yào mǎi mǐ _" }, { text: "我也可以買糖果嗎？", zhuyinStr: "ㄨㄛˇ ㄧㄝˇ ㄎㄜˇ ㄧˇ ㄇㄞˇ ㄊㄤˊ ㄍㄨㄛˇ ㄇㄚ˙ _", pinyinStr: "wǒ yě kě yǐ mǎi táng guǒ ma _" }, { text: "我們去看一下吧！", zhuyinStr: "ㄨㄛˇ ㄇㄣ˙ ㄑㄩˋ ㄎㄢˋ ㄧˊ ㄒㄧㄚˋ ㄅㄚ˙ _", pinyinStr: "wǒ men qù kàn yí xià ba _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) },
+      { id: 'L4', title: '第四課：我想吃漢堡', titleEn: 'Lesson 4: I Want a Hamburger', sentences: [ { text: "我想吃漢堡跟薯條，我們可不可以出去吃？", zhuyinStr: "ㄨㄛˇ ㄒㄧㄤˇ ㄔ ㄏㄢˋ ㄅㄠˇ ㄍㄣ ㄕㄨˇ ㄊㄧㄠˊ _ ㄨㄛˇ ㄇㄣ˙ ㄎㄜˇ ㄅㄨˋ ㄎㄜˇ ㄧˇ ㄔㄨ ㄑㄩˋ ㄔ _", pinyinStr: "wǒ xiǎng chī hàn bǎo gēn shǔ tiáo _ wǒ men kě bù kě yǐ chū qù chī _" }, { text: "今天先在家吃，週末再出去吃吧！", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ ㄒㄧㄢ ㄗㄞˋ ㄐㄧㄚ ㄔ _ ㄓㄡ ㄇㄛˋ ㄗㄞˋ ㄔㄨ ㄑㄩˋ ㄔ ㄅㄚ˙ _", pinyinStr: "jīn tiān xiān zài jiā chī _ zhōu mò zài chū qù chī ba _" }, { text: "今天晚餐想吃什麼？", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ ㄨㄢˇ ㄘㄢ ㄒㄧㄤˇ ㄔ ㄕㄣˊ ㄇㄜ˙ _", pinyinStr: "jīn tiān wǎn cān xiǎng chī shén me _" }, { text: "我想吃麵。文文，你呢？", zhuyinStr: "ㄨㄛˇ ㄒㄧㄤˇ ㄔ ㄇㄧㄢˋ _ ㄨㄣˊ ㄨㄣˊ _ ㄋㄧˇ ㄋㄜ˙ _", pinyinStr: "wǒ xiǎng chī miàn _ wén wen _ nǐ ne _" }, { text: "我想吃蛋炒飯，有湯嗎？", zhuyinStr: "ㄨㄛˇ ㄒㄧㄤˇ ㄔ ㄉㄢˋ ㄔㄠˇ ㄈㄢˋ _ ㄧㄡˇ ㄊㄤ ㄇㄚ˙ _", pinyinStr: "wǒ xiǎng chī dàn chǎo fàn _ yǒu tāng ma _" }, { text: "我已經做了玉米湯。", zhuyinStr: "ㄨㄛˇ ㄧˇ ㄐㄧㄥ ㄗㄨㄛˋ ㄌㄜ˙ ㄩˋ ㄇㄧˇ ㄊㄤ _", pinyinStr: "wǒ yǐ jīng zuò le yù mǐ tāng _" }, { text: "媽，我現在很餓，想快點吃晚飯，好嗎？", zhuyinStr: "ㄇㄚ _ ㄨㄛˇ ㄒㄧㄢˋ ㄗㄞˋ ㄏㄣˇ ㄜˋ _ ㄒㄧㄤˇ ㄎㄨㄞˋ ㄉㄧㄢˇ ㄔ ㄨㄢˇ ㄈㄢˋ _ ㄏㄠˇ ㄇㄚ˙ _", pinyinStr: "mā _ wǒ xiàn zài hěn è _ xiǎng kuài diǎn chī wǎn fàn _ hǎo ma _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) },
+      { id: 'L5', title: '第五課：春天快到了', titleEn: 'Lesson 5: Spring is Coming', sentences: [ { text: "你看！樹葉變黃了，秋天快到了。", zhuyinStr: "ㄋㄧˇ ㄎㄢˋ _ ㄕㄨˋ ㄧㄝˋ ㄅㄧㄢˋ ㄏㄨㄤˊ ㄌㄜ˙ _ ㄑㄧㄡ ㄊㄧㄢ ㄎㄨㄞˋ ㄉㄠˋ ㄌㄜ˙ _", pinyinStr: "nǐ kàn _ shù yè biàn huáng le _ qiū tiān kuài dào le _" }, { text: "可是草還是綠色的。", zhuyinStr: "ㄎㄜˇ ㄕˋ ㄘㄠˇ ㄏㄞˊ ㄕˋ ㄌㄩˋ ㄙㄜˋ ㄉㄜ˙ _", pinyinStr: "kě shì cǎo hái shì lǜ sè de _" }, { text: "秋天天氣很好，我覺得很舒服。", zhuyinStr: "ㄑㄧㄡ ㄊㄧㄢ ㄊㄧㄢ ㄑㄧˋ ㄏㄣˇ ㄏㄠˇ _ ㄨㄛˇ ㄐㄩㄝˊ ㄉㄜ˙ ㄏㄣˇ ㄕㄨ ㄈㄨˊ _", pinyinStr: "qiū tiān tiān qì hěn hǎo _ wǒ jué de hěn shū fu _" }, { text: "春天也不錯。", zhuyinStr: "ㄔㄨㄣ ㄊㄧㄢ ㄧㄝˇ ㄅㄨˊ ㄘㄨㄛˋ _", pinyinStr: "chūn tiān yě bú cuò _" }, { text: "春天的時候，我們家院子有很多顏色的花。", zhuyinStr: "ㄔㄨㄣ ㄊㄧㄢ ㄉㄜ˙ ㄕˊ ㄏㄡˋ _ ㄨㄛˇ ㄇㄣ˙ ㄐㄧㄚ ㄩㄢˋ ㄗ˙ ㄧㄡˇ ㄏㄣˇ ㄉㄨㄛ ㄧㄢˊ ㄙㄜˋ ㄉㄜ˙ ㄏㄨㄚ _", pinyinStr: "chūn tiān de shí hòu _ wǒ men jiā yuàn zi yǒu hěn duō yán sè de huā _" }, { text: "紅色的、白色的都有。", zhuyinStr: "ㄏㄨㄥˊ ㄙㄜˋ ㄉㄜ˙ _ ㄅㄞˊ ㄙㄜˋ ㄉㄜ˙ ㄉㄡ ㄧㄡˇ _", pinyinStr: "hóng sè de _ bái sè de dōu yǒu _" }, { text: "我覺得紅色的花最漂亮。", zhuyinStr: "ㄨㄛˇ ㄐㄩㄝˊ ㄉㄜ˙ ㄏㄨㄥˊ ㄙㄜˋ ㄉㄜ˙ ㄏㄨㄚ ㄗㄨㄟˋ ㄆㄧㄠˋ ㄌㄧㄤˋ _", pinyinStr: "wǒ jué de hóng sè de huā zuì piào liàng _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) },
+      { id: 'L6', title: '第六課：農曆新年', titleEn: 'Lesson 6: Lunar New Year', sentences: [ { text: "老師說農曆新年快到了。", zhuyinStr: "ㄌㄠˇ ㄕ ㄕㄨㄛ ㄋㄨㄥˊ ㄌㄧˋ ㄒㄧㄣ ㄋㄧㄢˊ ㄎㄨㄞˋ ㄉㄠˋ ㄌㄜ˙ _", pinyinStr: "lǎo shī shuō nóng lì xīn nián kuài dào le _" }, { text: "對，下個星期五是農曆新年。", zhuyinStr: "ㄉㄨㄟˋ _ ㄒㄧㄚˋ ㄍㄜ˙ ㄒㄧㄥ ㄑㄧ ㄨˇ ㄕˋ ㄋㄨㄥˊ ㄌㄧˋ ㄒㄧㄣ ㄋㄧㄢˊ _", pinyinStr: "duì _ xià ge xīng qī wǔ shì nóng lì xīn nián _" }, { text: "媽媽會去華人超市買年糕嗎？", zhuyinStr: "ㄇㄚ ㄇㄚ˙ ㄏㄨㄟˋ ㄑㄩˋ ㄏㄨㄚˊ ㄖㄣˊ ㄔㄠ ㄕˋ ㄇㄞˇ ㄋㄧㄢˊ ㄍㄠ ㄇㄚ˙ _", pinyinStr: "mā ma huì qù huá rén chāo shì mǎi nián gāo ma _" }, { text: "會，那天我們還要給爺爺奶奶拜年。", zhuyinStr: "ㄏㄨㄟˋ _ ㄋㄚˋ ㄊㄧㄢ ㄨㄛˇ ㄇㄣ˙ ㄏㄞˊ ㄧㄠˋ ㄍㄟˇ ㄧㄝˊ ㄧㄝ˙ ㄋㄞˇ ㄋㄞ˙ ㄅㄞˋ ㄋㄧㄢˊ _", pinyinStr: "huì _ nà tiān wǒ men hái yào gěi yé ye nǎi nai bài nián _" }, { text: "太好了，爺爺每年都會給我紅包。", zhuyinStr: "ㄊㄞˋ ㄏㄠˇ ㄌㄜ˙ _ ㄧㄝˊ ㄧㄝ˙ ㄇㄟˇ ㄋㄧㄢˊ ㄉㄡ ㄏㄨㄟˋ ㄍㄟˇ ㄨㄛˇ ㄏㄨㄥˊ ㄅㄠ _", pinyinStr: "tài hǎo le _ yé ye měi nián dōu huì gěi wǒ hóng bāo _" }, { text: "如果在臺灣，我們還會貼春聯、放鞭炮。", zhuyinStr: "ㄖㄨˊ ㄍㄨㄛˇ ㄗㄞˋ ㄊㄞˊ ㄨㄢ _ ㄨㄛˇ ㄇㄣ˙ ㄏㄞˊ ㄏㄨㄟˋ ㄊㄧㄝ ㄔㄨㄣ ㄌㄧㄢˊ _ ㄈㄤˋ ㄅㄧㄢ ㄆㄠˋ _", pinyinStr: "rú guǒ zài tái wān _ wǒ men hái huì tiē chūn lián _ fàng biān pào _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) },
+      { id: 'L7', title: '第七課：早一點睡覺', titleEn: 'Lesson 7: Go to Sleep Earlier', sentences: [ { text: "大文，該起床了！來不及了！", zhuyinStr: "ㄉㄚˋ ㄨㄣˊ _ ㄍㄞ ㄑㄧˇ ㄔㄨㄤˊ ㄌㄜ˙ _ ㄌㄞˊ ㄅㄨˋ ㄐㄧˊ ㄌㄜ˙ _", pinyinStr: "dà wén _ gāi qǐ chuáng le _ lái bù jí le _" }, { text: "我很累，還想睡覺。", zhuyinStr: "ㄨㄛˇ ㄏㄣˇ ㄌㄟˋ _ ㄏㄞˊ ㄒㄧㄤˇ ㄕㄨㄟˋ ㄐㄧㄠˋ _", pinyinStr: "wǒ hěn lèi _ hái xiǎng shuì jiào _" }, { text: "今天晚上早一點睡，現在趕快去刷牙、洗澡。", zhuyinStr: "ㄐㄧㄣ ㄊㄧㄢ ㄨㄢˇ ㄕㄤˋ ㄗㄠˇ ㄧˋ ㄉㄧㄢˇ ㄕㄨㄟˋ _ ㄒㄧㄢˋ ㄗㄞˋ ㄍㄢˇ ㄎㄨㄞˋ ㄑㄩˋ ㄕㄨㄚ ㄧㄚˊ _ ㄒㄧˇ ㄗㄠˇ _", pinyinStr: "jīn tiān wǎn shàng zǎo yì diǎn shuì _ xiàn zài gǎn kuài qù shuā yá _ xǐ zǎo _" }, { text: "我昨天晚上洗過澡了。", zhuyinStr: "ㄨㄛˇ ㄗㄨㄛˊ ㄊㄧㄢ ㄨㄢˇ ㄕㄤˋ ㄒㄧˇ ㄍㄨㄛˋ ㄗㄠˇ ㄌㄜ˙ _", pinyinStr: "wǒ zuó tiān wǎn shàng xǐ guò zǎo le _" }, { text: "還有，別忘了用肥皂洗臉。", zhuyinStr: "ㄏㄞˊ ㄧㄡˇ _ ㄅㄧㄝˊ ㄨㄤˋ ㄌㄜ˙ ㄩㄥˋ ㄈㄟˊ ㄗㄠˋ ㄒㄧˇ ㄌㄧㄢˇ _", pinyinStr: "hái yǒu _ bié wàng le yòng féi zào xǐ liǎn _" }, { text: "我知道了，要洗乾淨。", zhuyinStr: "ㄨㄛˇ ㄓ ㄉㄠˋ ㄌㄜ˙ _ ㄧㄠˋ ㄒㄧˇ ㄍㄢ ㄐㄧㄥˋ _", pinyinStr: "wǒ zhī dào le _ yào xǐ gān jìng _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) },
+      { id: 'L8', title: '第八課：我的寵物', titleEn: 'Lesson 8: My Pet', sentences: [ { text: "昨天我爸爸的朋友送給我一隻狗，你們家有寵物嗎？", zhuyinStr: "ㄗㄨㄛˊ ㄊㄧㄢ ㄨㄛˇ ㄅㄚˋ ㄅㄚ˙ ㄉㄜ˙ ㄆㄥˊ ㄧㄡˇ ㄙㄨㄥˋ ㄍㄟˇ ㄨㄛˇ ㄧˋ ㄓ ㄍㄡˇ _ ㄋㄧˇ ㄇㄣ˙ ㄐㄧㄚ ㄧㄡˇ ㄔㄨㄥˇ ㄨˋ ㄇㄚ˙ _", pinyinStr: "zuó tiān wǒ bà ba de péng yǒu sòng gěi wǒ yì zhī gǒu _ nǐ men jiā yǒu chǒng wù ma _" }, { text: "有，我家有兩隻狗，我每天都帶牠們去散步。", zhuyinStr: "ㄧㄡˇ _ ㄨㄛˇ ㄐㄧㄚ ㄧㄡˇ ㄌㄧㄤˇ ㄓ ㄍㄡˇ _ ㄨㄛˇ ㄇㄟˇ ㄊㄧㄢ ㄉㄡ ㄉㄞˋ ㄊㄚ ㄇㄣ˙ ㄑㄩˋ ㄙㄢˋ ㄅㄨˋ _", pinyinStr: "yǒu _ wǒ jiā yǒu liǎng zhī gǒu _ wǒ měi tiān dōu dài tā men qù sàn bù _" }, { text: "張莉，你養過狗嗎？", zhuyinStr: "ㄓㄤ ㄌㄧˋ _ ㄋㄧˇ ㄧㄤˇ ㄍㄨㄛˋ ㄍㄡˇ ㄇㄚ˙ _", pinyinStr: "zhāng lì _ nǐ yǎng guò gǒu ma _" }, { text: "我沒養過狗，我去年養了一隻貓，可是上個月不見了。", zhuyinStr: "ㄨㄛˇ ㄇㄟˊ ㄧㄤˇ ㄍㄨㄛˋ ㄍㄡˇ _ ㄨㄛˇ ㄑㄩˋ ㄋㄧㄢˊ ㄧㄤˇ ㄌㄜ˙ ㄧˋ ㄓ ㄇㄠ _ ㄎㄜˇ ㄕˋ ㄕㄤˋ ㄍㄜ˙ ㄩㄝˋ ㄅㄨˊ ㄐㄧㄢˋ ㄌㄜ˙ _", pinyinStr: "wǒ méi yǎng guò gǒu _ wǒ qù nián yǎng le yì zhī māo _ kě shì shàng ge yuè bú jiàn le _" }, { text: "我也養過貓，非常可愛，我每天都餵牠。", zhuyinStr: "ㄨㄛˇ ㄧㄝˇ ㄧㄤˇ ㄍㄨㄛˋ ㄇㄠ _ ㄈㄟ ㄔㄤˊ ㄎㄜˇ ㄞˋ _ ㄨㄛˇ ㄇㄟˇ ㄊㄧㄢ ㄉㄡ ㄨㄟˋ ㄊㄚ _", pinyinStr: "wǒ yě yǎng guò māo _ fēi cháng kě ài _ wǒ měi tiān dōu wèi tā _" }, { text: "以後我想養一隻兔子。", zhuyinStr: "ㄧˇ ㄏㄡˋ ㄨㄛˇ ㄒㄧㄤˇ ㄧㄤˇ ㄧˋ ㄓ ㄊㄨˋ ㄗ˙ _", pinyinStr: "yǐ hòu wǒ xiǎng yǎng yì zhī tù zi _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) },
+      { id: 'L9', title: '第九課：音樂教室在北方', titleEn: 'Lesson 9: Music Room is in the North', sentences: [ { text: "東明，這是什麼？", zhuyinStr: "ㄉㄨㄥ ㄇㄧㄥˊ _ ㄓㄜˋ ㄕˋ ㄕㄣˊ ㄇㄜ˙ _", pinyinStr: "dōng míng _ zhè shì shén me _" }, { text: "指南針，也叫指北針，它告訴我們南方和北方在哪裡。", zhuyinStr: "ㄓˇ ㄋㄢˊ ㄓㄣ _ ㄧㄝˇ ㄐㄧㄠˋ ㄓˇ ㄅㄟˇ ㄓㄣ _ ㄊㄚ ㄍㄠˋ ㄙㄨˋ ㄨㄛˇ ㄇㄣ˙ ㄋㄢˊ ㄈㄤ ㄏㄢˋ ㄅㄟˇ ㄈㄤ ㄗㄞˋ ㄋㄚˇ ㄌㄧˇ _", pinyinStr: "zhǐ nán zhēn _ yě jiào zhǐ běi zhēn _ tā gào sù wǒ men nán fāng hàn běi fāng zài nǎ lǐ _" }, { text: "音樂教室是什麼方向？", zhuyinStr: "ㄧㄣ ㄩㄝˋ ㄐㄧㄠˋ ㄕˋ ㄕˋ ㄕㄣˊ ㄇㄜ˙ ㄈㄤ ㄒㄧㄤˋ _", pinyinStr: "yīn yuè jiào shì shì shén me fāng xiàng _" }, { text: "音樂教室在北方，校門口在南方。", zhuyinStr: "ㄧㄣ ㄩㄝˋ ㄐㄧㄠˋ ㄕˋ ㄗㄞˋ ㄅㄟˇ ㄈㄤ _ ㄒㄧㄠˋ ㄇㄣˊ ㄎㄡˇ ㄗㄞˋ ㄋㄢˊ ㄈㄤ _", pinyinStr: "yīn yuè jiào shì zài běi fāng _ xiào mén kǒu zài nán fāng _" }, { text: "足球場在東方，還是西方？", zhuyinStr: "ㄗㄨˊ ㄑㄧㄡˊ ㄔㄤˇ ㄗㄞˋ ㄉㄨㄥ ㄈㄤ _ ㄏㄞˊ ㄕˋ ㄒㄧ ㄈㄤ _", pinyinStr: "zú qiú chǎng zài dōng fāng _ hái shì xī fāng _" }, { text: "因為音樂教室在北方，所以足球場在東方。", zhuyinStr: "ㄧㄣ ㄨㄟˋ ㄧㄣ ㄩㄝˋ ㄐㄧㄠˋ ㄕˋ ㄗㄞˋ ㄅㄟˇ ㄈㄤ _ ㄙㄨㄛˇ ㄧˇ ㄗㄨˊ ㄑㄧㄡˊ ㄔㄤˇ ㄗㄞˋ ㄉㄨㄥ ㄈㄤ _", pinyinStr: "yīn wèi yīn yuè jiào shì zài běi fāng _ suǒ yǐ zú qiú chǎng zài dōng fāng _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) },
+      { id: 'L10', title: '第十課：外公外婆住在臺灣', titleEn: 'Lesson 10: Grandparents Live in Taiwan', sentences: [ { text: "暑假的時候，我會去臺灣看外公、外婆。", zhuyinStr: "ㄕㄨˇ ㄐㄧㄚˋ ㄉㄜ˙ ㄕˊ ㄏㄡˋ _ ㄨㄛˇ ㄏㄨㄟˋ ㄑㄩˋ ㄊㄞˊ ㄨㄢ ㄎㄢˋ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ _", pinyinStr: "shǔ jià de shí hòu _ wǒ huì qù tái wān kàn wài gōng _ wài pó _" }, { text: "你外公、外婆家在哪裡？", zhuyinStr: "ㄋㄧˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄐㄧㄚ ㄗㄞˋ ㄋㄚˇ ㄌㄧˇ _", pinyinStr: "nǐ wài gōng _ wài pó jiā zài nǎ lǐ _" }, { text: "他們本來住在臺北，退休以後，跟我的舅舅住在臺南。", zhuyinStr: "ㄊㄚ ㄇㄣ˙ ㄅㄣˇ ㄌㄞˊ ㄓㄨˋ ㄗㄞˋ ㄊㄞˊ ㄅㄟˇ _ ㄊㄨㄟˋ ㄒㄧㄡ ㄧˇ ㄏㄡˋ _ ㄍㄣ ㄨㄛˇ ㄉㄜ˙ ㄐㄧㄡˋ ㄐㄧㄡ˙ ㄓㄨˋ ㄗㄞˋ ㄊㄞˊ ㄋㄢˊ _", pinyinStr: "tā men běn lái zhù zài tái běi _ tuī xiū yǐ hòu _ gēn wǒ de jiù jiu zhù zài tái nán _" }, { text: "你們每年都去看外公、外婆嗎？", zhuyinStr: "ㄋㄧˇ ㄇㄣ˙ ㄇㄟˇ ㄋㄧㄢˊ ㄉㄡ ㄑㄩˋ ㄎㄢˋ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄇㄚ˙ _", pinyinStr: "nǐ men měi nián dōu qù kàn wài gōng _ wài pó ma _" }, { text: "我們每年都去看他們一次，你外公、外婆住在哪裡？", zhuyinStr: "ㄨㄛˇ ㄇㄣ˙ ㄇㄟˇ ㄋㄧㄢˊ ㄉㄡ ㄑㄩˋ ㄎㄢˋ ㄊㄚ ㄇㄣ˙ ㄧˊ ㄘˋ _ ㄋㄧˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄓㄨˋ ㄗㄞˋ ㄋㄚˇ ㄌㄧˇ _", pinyinStr: "wǒ men měi nián dōu qù kàn tā men yí cì _ nǐ wài gōng _ wài pó zhù zài nǎ lǐ _" }, { text: "我外公、外婆現在住在紐約，他們下個月會來看我們。", zhuyinStr: "ㄨㄛˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄒㄧㄢˋ ㄗㄞˋ ㄓㄨˋ ㄗㄞˋ ㄋㄧㄡˇ ㄩㄝ _ ㄊㄚ ㄇㄣ˙ ㄒㄧㄚˋ ㄍㄜ˙ ㄩㄝˋ ㄏㄨㄟˋ ㄌㄞˋ ㄎㄢˋ ㄨㄛˇ ㄇㄣ˙ _", pinyinStr: "wǒ wài gōng _ wài pó xiàn zài zhù zài niǔ yuē _ tā men xià ge yuè huì lái kàn wǒ men _" }, { text: "我外公、外婆喜歡旅行，常常來看我們，也常去法國看阿姨。", zhuyinStr: "ㄨㄛˇ ㄨㄞˋ ㄍㄨㄥ _ ㄨㄞˋ ㄆㄛˊ ㄒㄧˇ ㄏㄨㄢ ㄌㄩˇ ㄒㄧㄥˊ _ ㄔㄤˊ ㄔㄤˊ ㄌㄞˋ ㄎㄢˋ ㄨㄛˇ ㄇㄣ˙ _ ㄧㄝˇ ㄔㄤˊ ㄑㄩˋ ㄈㄚˇ ㄍㄨㄛˊ ㄎㄢˋ ㄚ ㄧˊ _", pinyinStr: "wǒ wài gōng _ wài pó xǐ huān lǚ xíng _ cháng cháng lái kàn wǒ men _ yě cháng qù fǎ guó kàn ā yí _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) },
+      { id: 'L11', title: '第十一課：去動物園', titleEn: 'Lesson 11: Going to the Zoo', sentences: [ { text: "下個星期五，學校要帶我們去動物園玩。", zhuyinStr: "ㄒㄧㄚˋ ㄍㄜ˙ ㄒㄧㄥ ㄑㄧ ㄨˇ _ ㄒㄩㄝˊ ㄒㄧㄠˋ ㄧㄠˋ ㄉㄞˋ ㄨㄛˇ ㄇㄣ˙ ㄑㄩˋ ㄉㄨㄥˋ ㄨˋ ㄩㄢˊ ㄨㄢˊ _", pinyinStr: "xià ge xīng qī wǔ _ xué xiào yào dài wǒ men qù dòng wù yuán wán _" }, { text: "太好了！你可以看到你喜歡的大象和老虎。", zhuyinStr: "ㄊㄞˋ ㄏㄠˇ ㄌㄜ˙ _ ㄋㄧˇ ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄋㄧˇ ㄒㄧˇ ㄏㄨㄢ ㄉㄜ˙ ㄉㄚˋ ㄒㄧㄤˋ ㄏㄢˋ ㄌㄠˇ ㄏㄨˇ _", pinyinStr: "tài hǎo le _ nǐ kě yǐ kàn dào nǐ xǐ huān de dà xiàng hàn lǎo hǔ _" }, { text: "這一次我希望可以看到熊貓和猴子。", zhuyinStr: "ㄓㄜˋ ㄧˊ ㄘˋ ㄨㄛˇ ㄒㄧ ㄨㄤˋ ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄒㄩㄥˊ ㄇㄠ ㄏㄢˋ ㄏㄡˊ ㄗ˙ _", pinyinStr: "zhè yí cì wǒ xī wàng kě yǐ kàn dào xióng māo hàn hóu zi _" }, { text: "對，以前我去的時候，動物園沒有熊貓。", zhuyinStr: "ㄉㄨㄟˋ _ ㄧˇ ㄑㄧㄢˊ ㄨㄛˇ ㄑㄩˋ ㄉㄜ˙ ㄕˊ ㄏㄡˋ _ ㄉㄨㄥˋ ㄨˋ ㄩㄢˊ ㄇㄟˊ ㄧㄡˇ ㄒㄩㄥˊ ㄇㄠ _", pinyinStr: "duì _ yǐ qián wǒ qù de shí hòu _ dòng wù yuán méi yǒu xióng māo _" }, { text: "現在不但有熊貓，還有企鵝。", zhuyinStr: "ㄒㄧㄢˋ ㄗㄞˋ ㄅㄨˊ ㄉㄢˋ ㄧㄡˇ ㄒㄩㄥˊ ㄇㄠ _ ㄏㄞˊ ㄧㄡˇ ㄑㄧˋ ㄜˊ _", pinyinStr: "xiàn zài bú dàn yǒu xióng māo _ hái yǒu qì é _" }, { text: "我覺得熊貓胖胖的，真可愛！", zhuyinStr: "ㄨㄛˇ ㄐㄩㄝˊ ㄉㄜ˙ ㄒㄩㄥˊ ㄇㄠ ㄆㄤˋ ㄆㄤˋ ㄉㄜ˙ _ ㄓㄣ ㄎㄜˇ ㄞˋ _", pinyinStr: "wǒ jué de xióng māo pàng pàng de _ zhēn kě ài _" }, { text: "我喜歡長頸鹿，脖子長長的。", zhuyinStr: "ㄨㄛˇ ㄒㄧˇ ㄏㄨㄢ ㄔㄤˊ ㄐㄧㄥˇ ㄌㄨˋ _ ㄅㄛˊ ㄗ˙ ㄔㄤˊ ㄔㄤˊ ㄉㄜ˙ _", pinyinStr: "wǒ xǐ huān cháng jǐng lù _ bó zi cháng cháng de _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) },
+      { id: 'L12', title: '第十二課：打網路電話', titleEn: 'Lesson 12: Making an Internet Call', sentences: [ { text: "大文，我現在要用網路給姑姑打電話。", zhuyinStr: "ㄉㄚˋ ㄨㄣˊ _ ㄨㄛˇ ㄒㄧㄢˋ ㄗㄞˋ ㄧㄠˋ ㄩㄥˋ ㄨㄤˇ ㄌㄨˋ ㄍㄟˇ ㄍㄨ ㄍㄨ ㄉㄚˇ ㄉㄧㄢˋ ㄏㄨㄚˋ _", pinyinStr: "dà wén _ wǒ xiàn zài yào yòng wǎng lù gěi gū gu dǎ diàn huà _" }, { text: "可以看到姑姑嗎？我很久沒跟姑姑說話了。", zhuyinStr: "ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄍㄨ ㄍㄨ ㄇㄚ˙ _ ㄨㄛˇ ㄏㄣˇ ㄐㄧㄡˇ ㄇㄟˊ ㄍㄣ ㄍㄨ ㄍㄨ ㄕㄨㄛ ㄏㄨㄚˋ ㄌㄜ˙ _", pinyinStr: "kě yǐ kàn dào gū gu ma _ wǒ hěn jiǔ méi gēn gū gu shuō huà le _" }, { text: "可以看到她的影像，快一點過來。", zhuyinStr: "ㄎㄜˇ ㄧˇ ㄎㄢˋ ㄉㄠˋ ㄊㄚ ㄉㄜ˙ ㄧㄥˇ ㄒㄧㄤˋ _ ㄎㄨㄞˋ ㄧˋ ㄉㄧㄢˋ ㄍㄨㄛˋ ㄌㄞˊ _", pinyinStr: "kě yǐ kàn dào tā de yǐng xiàng _ kuài yì diǎn guò lái _" }, { text: "大文，你看起來瘦了。", zhuyinStr: "ㄉㄚˋ ㄨㄣˊ _ ㄋㄧˇ ㄎㄢˋ ㄑㄧˇ ㄌㄞˊ ㄕㄡˋ ㄌㄜ˙ _", pinyinStr: "dà wén _ nǐ kàn qǐ lái shòu le _" }, { text: "我沒瘦，我長高了。", zhuyinStr: "ㄨㄛˇ ㄇㄟˊ ㄕㄡˋ _ ㄨㄛˇ ㄓㄤˇ ㄍㄠ ㄌㄜ˙ _", pinyinStr: "wǒ méi shòu _ wǒ zhǎng gāo le _" }, { text: "文文現在也跟你一起去學華語嗎？", zhuyinStr: "ㄨㄣˊ ㄨㄣˊ ㄒㄧㄢˋ ㄗㄞˋ ㄧㄝˇ ㄍㄣ ㄋㄧˇ ㄧˋ ㄑㄧˇ ㄑㄩˋ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ ㄇㄚ˙ _", pinyinStr: "wén wen xiàn zài yě gēn nǐ yì qǐ qù xué huá yǔ ma _" }, { text: "是啊！上華語課很有意思。", zhuyinStr: "ㄕˋ ㄚ _ ㄕㄤˋ ㄏㄨㄚˊ ㄩˇ ㄎㄜˋ ㄏㄣˇ ㄧㄡˇ ㄧˋ ㄙ˙ _", pinyinStr: "shì a _ shàng huá yǔ kè hěn yǒu yì si _" }, { text: "你好好學華語，以後可以用網路給我寫信。", zhuyinStr: "ㄋㄧˇ ㄏㄠˇ ㄏㄠˇ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ _ ㄧˇ ㄏㄡˋ ㄎㄜˇ ㄧˇ ㄩㄥˋ ㄨㄤˇ ㄌㄨˋ ㄍㄟˇ ㄨㄛˇ ㄒㄧㄝˇ ㄒㄧㄣˋ _", pinyinStr: "nǐ hǎo hǎo xué huá yǔ _ yǐ hòu kě yǐ yòng wǎng lù gěi wǒ xiě xìn _" }, { text: "沒問題，我一定會好好學華語。", zhuyinStr: "ㄇㄟˊ ㄨㄣˋ ㄊㄧˊ _ ㄨㄛˇ ㄧˊ ㄉㄧㄥˋ ㄏㄨㄟˋ ㄏㄠˇ ㄏㄠˇ ㄒㄩㄝˊ ㄏㄨㄚˊ ㄩˇ _", pinyinStr: "méi wèn tí _ wǒ yí dìng huì hǎo hǎo xué huá yǔ _" } ].map(s => ({ text: s.text, zhuyin: s.zhuyinStr.split(' '), pinyin: s.pinyinStr.split(' ') })) }
     ];
 
-    // --- 翻譯與文字處理 ---
     const TRANSLATIONS = { 
       zh: { 
-        appTitle: "華語小麥克", appSubtitle: "《學華語向前走》", tipsTitle: "闖關小秘訣", 
-        tip1: "點擊麥克風，大聲朗讀句子", tip2: "發音越標準，收集越多星星", tip3: "完成全課，幫毛毛蟲變蝴蝶", 
-        enterName: "請輸入你的名字：", placeholderName: "小毛蟲", startBtn: "開始闖關！", 
-        readingChallenge: "的朗讀挑戰", littleCaterpillar: "小毛蟲", fullscreen: "全螢幕", 
-        showZhuyin: "顯示注音", hideZhuyin: "隱藏注音", zhuyinMobile: "注音", hideMobile: "隱藏", 
-        copyLink: "複製網址", copied: "已複製！", progress: "好餓的毛毛蟲闖關進度：", 
+        appTitle: "課文我會讀", appSubtitle: "《學華語向前走》", tipsTitle: "闖關小秘訣", 
+        tip1: "點擊麥克風，大聲朗讀句子", tip2: "發音越標準，收集越多星星", tip3: "完成全課，解鎖最高成就", 
+        enterName: "請輸入你的名字：", placeholderName: "小勇士", startBtn: "開始闖關！", 
+        chooseAvatar: "選一個你的專屬頭像：", 
+        readingChallenge: "的朗讀挑戰", littleCaterpillar: "", fullscreen: "全螢幕", 
+        showZhuyin: "顯示注音", showPinyin: "顯示拼音", hidePhonetic: "隱藏拼音", 
+        zhuyinBtn: "注音", pinyinBtn: "拼音", hideBtn: "隱藏", 
+        copyLink: "複製網址", copied: "已複製！", progress: "闖關進度：", 
         readAloud: "請大聲唸出這句話", clickToHear: "💡 點字可聽發音", teacherHelp: "老師幫幫我", 
         clickMicToStart: "點擊麥克風開始朗讀", listening: "正在聽你說... (點擊停止)", 
-        micHeard: "小麥克聽到了", perfect: "太棒了！完全正確！ 🎉", good: "很好喔！再試一次會更完美！ 👍", 
+        micHeard: "小幻獸聽到了", perfect: "太棒了！完全正確！ 🎉", good: "很好喔！再試一次會更完美！ 👍", 
         tryAgainMsg: "加油！老師陪你再唸一次！ 💪", tryAgainBtn: "再試一次", nextSentence: "下一句", 
         finishLevel: "完成闖關", successTitle: "闖關大成功！", congrats: "恭喜", completed: "順利完成了", 
-        collectedStars: "總共收集了 {n} 顆星星！", tryAnother: "挑戰其他關卡", 
-        errMicPermission: "請允許瀏覽器使用麥克風喔！", errNoSpeech: "小麥克沒有聽到聲音喔，請再大聲唸一次！", 
+        collectedStars: "總共收集了 {n} 顆星星！", tryAnother: "挑戰其他關卡", playAgain: "再挑戰一次",
+        challengeHanzi: "挑戰只看漢字", requireSightReadingMsg: "發音很標準喔！現在把提示關掉，挑戰自己認字唸唸看！",
+        errMicPermission: "請允許瀏覽器使用麥克風喔！", errNoSpeech: "小幻獸沒有聽到聲音喔，請再大聲唸一次！", 
         errNoMic: "找不到麥克風設備，請檢查一下喔！", errMicError: "哎呀，麥克風發生了一點問題 ({error})，請重試！", 
         errStartMic: "啟動麥克風失敗，請稍微等一下再試！", errNoSupport: "抱歉！您的瀏覽器不支援語音辨識，請使用 Google Chrome。", 
         errCopy: "複製失敗，請手動複製上方網址列！", 
-        teacherPassed: "（老師幫忙過關）",
         micNoticeTitle: "⚠️ 手機/平板 使用須知",
         micNotice1: "請務必允許「麥克風權限」",
         micNotice2: "蘋果 (iPhone/iPad) 請務必使用 Safari",
         micNotice3: "安卓 (Android) 請務必使用 Chrome",
+        leaderboard: "英雄榜", rank: "名次", name: "姓名", score: "最高分", date: "日期", practiceStat: "練習量", lastUpdate: "最後更新", noData: "目前還沒有紀錄，趕快來挑戰吧！"
       }, 
       en: { 
-        appTitle: "Little Mandarin Mic", appSubtitle: "Let's Learn Mandarin", tipsTitle: "Quick Tips", 
-        tip1: "Click the mic & read aloud", tip2: "Better pronunciation = more stars", tip3: "Finish lesson to become a butterfly", 
-        enterName: "Please enter your name:", placeholderName: "Caterpillar", startBtn: "Start Challenge!", 
-        readingChallenge: "'s Reading Challenge", littleCaterpillar: "Little", fullscreen: "Fullscreen", 
-        showZhuyin: "Show Zhuyin", hideZhuyin: "Hide Zhuyin", zhuyinMobile: "Zhuyin", hideMobile: "Hide", 
-        copyLink: "Copy Link", copied: "Copied!", progress: "Hungry Caterpillar's Progress:", 
+        appTitle: "I can Read", appSubtitle: "Let's Learn Mandarin", tipsTitle: "Quick Tips", 
+        tip1: "Click the mic & read aloud", tip2: "Better pronunciation = more stars", tip3: "Finish lesson to become a master", 
+        enterName: "Please enter your name:", placeholderName: "Warrior", startBtn: "Start Challenge!", 
+        chooseAvatar: "Choose your unique avatar:", 
+        readingChallenge: "'s Reading Challenge", littleCaterpillar: "", fullscreen: "Fullscreen", 
+        showZhuyin: "Show Zhuyin", showPinyin: "Show Pinyin", hidePhonetic: "Hide Phonetics", 
+        zhuyinBtn: "Zhuyin", pinyinBtn: "Pinyin", hideBtn: "Hide", 
+        copyLink: "Copy Link", copied: "Copied!", progress: "Progress:", 
         readAloud: "Please read this sentence aloud", clickToHear: "💡 Click word to hear", teacherHelp: "Teacher, Help Me", 
         clickMicToStart: "Click mic to start reading", listening: "Listening... (Click to stop)", 
-        micHeard: "Little Mic heard:", perfect: "Excellent! Perfect! 🎉", good: "Good job! Try again for perfection! 👍", 
+        micHeard: "Monster heard:", perfect: "Excellent! Perfect! 🎉", good: "Good job! Try again for perfection! 👍", 
         tryAgainMsg: "Keep going! Let's try once more! 💪", tryAgainBtn: "Try Again", nextSentence: "Next Sentence", 
         finishLevel: "Finish Level", successTitle: "Challenge Completed!", congrats: "Congratulations", completed: "successfully completed", 
-        collectedStars: "Collected {n} stars in total!", tryAnother: "Try Another Level", 
+        collectedStars: "Collected {n} stars in total!", tryAnother: "Select Another Level", playAgain: "Play Again",
+        challengeHanzi: "Challenge Hanzi Only", requireSightReadingMsg: "Great pronunciation! Now turn off hints and try reading the characters!",
         errMicPermission: "Please allow microphone access!", errNoSpeech: "Didn't hear anything, please read louder!", 
         errNoMic: "No microphone found, please check your device!", errMicError: "Oops, microphone error ({error}), please try again!", 
-        errStartMic: "Failed to start microphone, please wait and try again!", errNoSupport: "Sorry! Your browser does not support speech recognition. Please use Google Chrome.", 
+        errStartMic: "Failed to start microphone, please wait and try again!", errNoSupport: "Sorry! Your browser does not support speech recognition. Please use Google Chrome。", 
         errCopy: "Copy failed, please copy the URL manually!", 
-        teacherPassed: "(Teacher helped to pass)",
         micNoticeTitle: "⚠️ Mobile/Tablet Notice",
         micNotice1: "Please 'Allow' microphone access",
         micNotice2: "iOS (iPhone/iPad): Please use Safari",
         micNotice3: "Android: Please use Chrome",
+        leaderboard: "Leaderboard", rank: "Rank", name: "Name", score: "Best Score", date: "Date", practiceStat: "Practice", lastUpdate: "Last Update", noData: "No records yet, be the first!"
       } 
     };
 
     const removePunctuation = (text) => text.replace(/[，。、！？；：「」『』\s]/g, '');
 
     const simplifyToTraditional = (text) => {
-      const simp = "万与丑专业丛东丝丢两严丧个丰临為丽举麼义乌乐乔习乡书买乱争于亏云亚产亩亲亿僅從仓仪们价众优伙会伞偉傳傷倫偽體餘傭俠侦側僑儈儕儂倆儷儉債傾儲兒兌黨蘭關興茲養獸內岡冊寫軍農冬決況凍淨淒涼減湊幾擊劃則剛創刪別刮到劑剃削前剮劍劇剩剪副割力勸辦功加務動助努劫勵勁勞勢勇勉勳勒勤勺勾勿勻包匆匈化区区医卅升半華協卑單賣南博卜盧鹵臥衛卻卵卷卸廠廳歷厲壓厭廁廂廈廚廄發變雞飽附超級巧克力冰淇淋糖果餐蛋炒累趕快洗澡肥皂昨友散步養丟向希望這來說對沒覺得樣歡迎學校語幫網絡點長瘦車門開關動物園玩見看裡邊電腦認識訴誰條嗎飯湯樹葉黃綠色紅白農曆華糕爺奶臺灣貼春聯放鞭炮起床睡覺晚刷臉乾淨寵狗貓兔餵南北東西針教室足場暑假公婆退休舅紐約旅行常法國阿姨象虎熊猴企鵝胖頸鹿脖姑話影像寫信問題定";
+      const simp = "万与丑专业丛东丝丢两严丧个丰临為丽举麼义乌乐乔习乡书买乱争于亏云亚产亩亲亿僅從仓仪们价众优伙会伞偉傳傷倫偽體餘傭俠侦側僑儈儕儂倆儷儉債傾儲兒兌黨蘭關興茲養獸內岡冊寫軍農冬決況凍淨淒涼減湊幾擊劃則剛創刪別刮到劑剃削前剮劍劇剩剪副割力勸辦功加務動助努劫勵劲勞勢勇勉勳勒勤勺勾勿勻包匆匈化区区医卅升半華協卑單賣南博卜盧鹵臥衛卻卵卷卸廠廳歷厲壓厭廁廂廈廚廄發變雞飽附超級巧克力冰淇淋糖果餐蛋炒累趕快洗澡肥皂昨友散步養丟向希望這來說對沒覺得樣歡迎學校語幫網絡點長瘦車門開關動物園玩見看裡邊電腦認識訴誰條嗎飯湯樹葉黃綠色紅白農曆華糕爺奶臺灣貼春聯放鞭炮起床睡覺晚刷臉乾淨寵狗貓兔餵南北東西針教室足場暑假公婆退休舅紐約旅行常法國阿姨象虎熊猴企鵝胖頸鹿脖姑話影像寫信問題定";
       const trad = "萬與醜專業叢東絲丟兩嚴喪個豐臨為麗舉麼義烏樂喬習鄉書買亂爭於虧雲亞產畝親億僅從倉儀們價眾優夥會傘偉傳傷倫偽體餘傭俠偵側僑儈儕儂倆儷儉債傾儲兒兌黨蘭關興茲養獸內岡冊寫軍農冬決況凍淨淒涼減湊幾擊劃則剛創刪別刮到劑剃削前剮劍劇剩剪副割力勸辦功加務動助努劫勵勁勞勢勇勉勳勒勤勺勾勿勻包匆匈化區區醫卅升半華協卑單賣南博卜盧鹵臥衛卻卵卷卸廠廳歷厲壓厭廁廂廈廚廄發變雞飽附超級巧克力冰淇淋糖果餐蛋炒累趕快洗澡肥皂昨友散步養丟向希望這來說對沒覺得樣歡迎學校語幫網絡點長瘦車門開關動物園玩見看裡邊電腦認識訴誰條嗎飯湯樹葉黃綠色紅白農曆華糕爺奶臺灣貼春聯放鞭炮起床睡覺晚刷臉乾淨寵狗貓兔餵南北東西針教室足場暑假公婆退休舅紐約旅行常法國阿姨象虎熊猴企鵝胖頸鹿脖姑話影像寫信問題定";
       let result = '';
       for (let i = 0; i < text.length; i++) {
@@ -252,37 +259,43 @@
       } else if (type === 'mild-success') { osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, ctx.currentTime); osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15); gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
       } else if (type === 'try-again') { osc.type = 'triangle'; osc.frequency.setValueAtTime(392.00, ctx.currentTime); osc.frequency.setValueAtTime(329.63, ctx.currentTime + 0.2); gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
       } else if (type === 'pop') { osc.type = 'sine'; osc.frequency.setValueAtTime(800, ctx.currentTime); gain.gain.setValueAtTime(0.05, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.1); }
-    };
-
-    const getTrackNodes = (total) => {
-      const fruits = ['🍎', '🍐', '🍑', '🍓', '🍊', '🍰', '🍦', '🥒', '🧀', '🌭', '🍭', '🍒', '🧁', '🍉', '🍃'];
-      const nodes = [];
-      for (let i = 0; i < total; i++) {
-        if (i === total - 1) nodes.push('🦋'); 
-        else if (i === total - 2) nodes.push('🏠'); 
-        else nodes.push(fruits[i % fruits.length]); 
+      else if (type === 'combo') {
+        osc.type = 'square'; osc.frequency.setValueAtTime(440, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.3); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3);
       }
-      return nodes;
     };
 
     function App() {
       const [lang, setLang] = useState('zh');
       const t = TRANSLATIONS[lang];
       const [selectedLesson, setSelectedLesson] = useState(LESSONS[0]);
+      const [leaderboardLesson, setLeaderboardLesson] = useState(LESSONS[0]);
       const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
       const [isRecording, setIsRecording] = useState(false);
       const [recognizedText, setRecognizedText] = useState('');
       const [result, setResult] = useState(null); 
       const [errorMsg, setErrorMsg] = useState('');
-      const [showZhuyin, setShowZhuyin] = useState(false); 
+      
+      const [phoneticMode, setPhoneticMode] = useState('none'); 
+      const [hasUsedHint, setHasUsedHint] = useState(false); 
+      
       const [isHoveringMic, setIsHoveringMic] = useState(false);
       const [copySuccess, setCopySuccess] = useState(false);
       const [isFlyingAway, setIsFlyingAway] = useState(false);
       const [studentName, setStudentName] = useState('');
       const [tempName, setTempName] = useState('');
+      const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
+      const [comboCount, setComboCount] = useState(0);
+      const [showComboAnimation, setShowComboAnimation] = useState(false);
+
       const [showSuccessScreen, setShowSuccessScreen] = useState(false);
       const [sessionStars, setSessionStars] = useState(0);
       const [isFullscreen, setIsFullscreen] = useState(false);
+      
+      const [showLeaderboard, setShowLeaderboard] = useState(false);
+      const [leaderboardData, setLeaderboardData] = useState([]);
+      const [totalAttempts, setTotalAttempts] = useState(0);
+
       const recognitionRef = useRef(null);
       const lessonListRef = useRef(null);
 
@@ -295,10 +308,106 @@
             console.log(`Error attempting to enable fullscreen: ${err.message}`);
           });
         } else {
-          if (document.exitFullscreen) {
-            document.exitFullscreen();
-          }
+          if (document.exitFullscreen) document.exitFullscreen();
         }
+      };
+
+      useEffect(() => {
+        const lessonRef = db.ref('leaderboard/' + leaderboardLesson.id);
+        const listener = lessonRef.orderByChild('timestamp').on('value', (snapshot) => {
+          const rawData = [];
+          snapshot.forEach((childSnapshot) => {
+            rawData.push({ id: childSnapshot.key, ...childSnapshot.val() });
+          });
+
+          const userGroups = {};
+          rawData.forEach(record => {
+            if (!userGroups[record.name]) userGroups[record.name] = [];
+            userGroups[record.name].push(record);
+          });
+
+          const aggregatedData = [];
+          Object.keys(userGroups).forEach(name => {
+            const records = userGroups[name];
+            
+            const uniqueDates = new Set(records.map(r => new Date(r.timestamp).toLocaleDateString('zh-TW')));
+            const daysCount = uniqueDates.size;
+            
+            const totalTries = records.length; 
+            
+            records.sort((a, b) => b.timestamp - a.timestamp);
+            const latestRecord = records[0];
+            const lastUpdateStr = new Date(latestRecord.timestamp).toLocaleString('zh-TW', {
+              month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'
+            });
+
+            records.sort((a, b) => {
+              if (b.score !== a.score) return b.score - a.score;
+              if ((a.attempts || 999) !== (b.attempts || 999)) return (a.attempts || 999) - (b.attempts || 999);
+              return b.timestamp - a.timestamp;
+            });
+            const bestRecord = records[0];
+
+            if (latestRecord.id === bestRecord.id) {
+              aggregatedData.push({
+                id: bestRecord.id,
+                name: name,
+                avatar: bestRecord.avatar || '👤',
+                bestScore: bestRecord.score,
+                daysCount: daysCount,
+                totalTries: totalTries,
+                lastUpdate: lastUpdateStr,
+                lastTimestamp: latestRecord.timestamp
+              });
+            } else {
+              aggregatedData.push({
+                id: bestRecord.id,
+                name: name + ' (最高)',
+                avatar: bestRecord.avatar || '👤',
+                bestScore: bestRecord.score,
+                daysCount: daysCount,
+                totalTries: totalTries,
+                lastUpdate: new Date(bestRecord.timestamp).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit' }),
+                lastTimestamp: bestRecord.timestamp
+              });
+              aggregatedData.push({
+                id: latestRecord.id,
+                name: name + ' (最新)',
+                avatar: latestRecord.avatar || '👤',
+                bestScore: latestRecord.score,
+                daysCount: daysCount,
+                totalTries: totalTries,
+                lastUpdate: lastUpdateStr,
+                lastTimestamp: latestRecord.timestamp
+              });
+            }
+          });
+
+          aggregatedData.sort((a, b) => {
+            if (b.bestScore !== a.bestScore) return b.bestScore - a.bestScore;
+            if (b.daysCount !== a.daysCount) return b.daysCount - a.daysCount;
+            if (a.totalTries !== b.totalTries) return a.totalTries - b.totalTries;
+            return b.lastTimestamp - a.lastTimestamp;
+          });
+
+          setLeaderboardData(aggregatedData);
+        });
+
+        return () => lessonRef.off('value', listener);
+      }, [leaderboardLesson.id]);
+
+      const saveScoreToFirebase = (finalStars) => {
+        if (!studentName) return;
+        const lessonRef = db.ref('leaderboard/' + selectedLesson.id);
+        
+        lessonRef.push({
+          name: studentName,
+          avatar: selectedAvatar,
+          score: finalStars,
+          attempts: totalAttempts,
+          date: new Date().toLocaleDateString('zh-TW'),
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
       };
 
       useEffect(() => {
@@ -312,7 +421,7 @@
         const lessonParam = urlParams.get('lesson');
         if (lessonParam) {
           const foundLesson = LESSONS.find(l => l.id === lessonParam);
-          if (foundLesson) setSelectedLesson(foundLesson);
+          if (foundLesson) { setSelectedLesson(foundLesson); setLeaderboardLesson(foundLesson); }
         }
       }, []);
 
@@ -323,11 +432,20 @@
       }, [showSuccessScreen]);
 
       useEffect(() => {
+        if (comboCount >= 2 && result && result.stars === 3) {
+            setShowComboAnimation(true);
+            playSound('combo');
+            const timer = setTimeout(() => setShowComboAnimation(false), 2000);
+            return () => clearTimeout(timer);
+        }
+      }, [comboCount, result]);
+
+      useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
           recognitionRef.current = new SpeechRecognition();
           recognitionRef.current.lang = 'cmn-Hant-TW'; 
-          recognitionRef.current.continuous = false;
+          recognitionRef.current.continuous = true;
           recognitionRef.current.interimResults = true; 
           recognitionRef.current.onresult = (event) => {
             let transcript = Array.from(event.results).map(r => r[0].transcript).join('');
@@ -350,7 +468,8 @@
       }, [isRecording, recognizedText]);
 
       useEffect(() => {
-        setCurrentSentenceIndex(0); setRecognizedText(''); setResult(null); setErrorMsg(''); setIsFlyingAway(false); setSessionStars(0); 
+        setCurrentSentenceIndex(0); setRecognizedText(''); setResult(null); setErrorMsg(''); setIsFlyingAway(false); 
+        setSessionStars(0); setHasUsedHint(false); setTotalAttempts(0); setComboCount(0);
       }, [selectedLesson]);
 
       const targetSentenceObj = selectedLesson.sentences[currentSentenceIndex];
@@ -363,6 +482,7 @@
 
       const playSingleCharSpeech = (char) => {
         if ('speechSynthesis' in window && removePunctuation(char) !== '') {
+          setHasUsedHint(true); 
           playSound('pop'); window.speechSynthesis.cancel(); 
           const utterance = new SpeechSynthesisUtterance(char); utterance.lang = 'zh-TW'; window.speechSynthesis.speak(utterance);
         }
@@ -380,60 +500,117 @@
       const evaluateSpeech = () => {
         const cleanTarget = removePunctuation(targetSentenceObj.text);
         const cleanRecognized = normalizeNumbers(removePunctuation(recognizedText));
+        
+        if (cleanRecognized.length === 0) return;
+        
+        setTotalAttempts(prev => prev + 1);
+
         let matchedChars = [];
         let correctCount = 0;
+        let tempRecognized = cleanRecognized;
         
         for (let i = 0; i < targetSentenceObj.text.length; i++) {
           const char = targetSentenceObj.text[i];
           const zhuyin = targetSentenceObj.zhuyin[i];
+          const pinyin = targetSentenceObj.pinyin[i];
           const isPunc = /[，。、！？；：「」『』\s]/.test(char);
 
-          if (isPunc) matchedChars.push({ char, zhuyin, isPunc, isCorrect: true });
-          else {
-            let isMatch = cleanRecognized.includes(char);
-            if (!isMatch && HOMOPHONE_ALIASES[char]) isMatch = HOMOPHONE_ALIASES[char].some(alias => cleanRecognized.includes(alias));
-            if (isMatch) { matchedChars.push({ char, zhuyin, isPunc, isCorrect: true }); correctCount++; }
-            else matchedChars.push({ char, zhuyin, isPunc, isCorrect: false });
+          if (isPunc) {
+              matchedChars.push({ char, zhuyin, pinyin, isPunc, isCorrect: true });
+          } else {
+            let matchIndex = tempRecognized.indexOf(char);
+            if (matchIndex === -1 && HOMOPHONE_ALIASES[char]) {
+                for (let alias of HOMOPHONE_ALIASES[char]) {
+                    matchIndex = tempRecognized.indexOf(alias);
+                    if (matchIndex !== -1) break;
+                }
+            }
+
+            if (matchIndex !== -1) { 
+                matchedChars.push({ char, zhuyin, pinyin, isPunc, isCorrect: true }); 
+                correctCount++; 
+                tempRecognized = tempRecognized.substring(0, matchIndex) + tempRecognized.substring(matchIndex + 1);
+            } else {
+                matchedChars.push({ char, zhuyin, pinyin, isPunc, isCorrect: false });
+            }
           }
         }
 
-        if (cleanRecognized.length === 0) return;
         const accuracy = correctCount / cleanTarget.length;
         
         let stars = 0;
-        if (accuracy >= 0.9) stars = 3;      
+        if (accuracy === 1) stars = 3;      
         else if (accuracy >= 0.6) stars = 2; 
         else if (accuracy >= 0.3) stars = 1; 
 
-        setSessionStars(prev => prev + stars);
-        const isLast = currentSentenceIndex === totalSentences - 1;
-        if (stars > 0 && isLast) { playSound('level-clear'); confetti({ particleCount: 300, spread: 120, origin: { y: 0.5 }, colors: ['#FFB020', '#FF5252', '#4CAF50', '#2196F3'] }); }
-        else if (stars === 3) { playSound('success'); confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ['#FFB020', '#4CAF50'] }); }
-        else if (stars > 0) playSound('mild-success');
-        else playSound('try-again');
+        const currentIsSightReading = phoneticMode === 'none' && !hasUsedHint;
+
+        if (stars > 0 && currentIsSightReading) {
+            setSessionStars(prev => prev + stars);
+            if (stars === 3) setComboCount(prev => prev + 1);
+            else setComboCount(0);
+
+            const isLast = currentSentenceIndex === totalSentences - 1;
+            if (isLast) { playSound('level-clear'); confetti({ particleCount: 300, spread: 120, origin: { y: 0.5 }, colors: ['#FFB020', '#FF5252', '#4CAF50', '#2196F3'] }); }
+            else if (stars === 3) { playSound('success'); confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ['#FFB020', '#4CAF50'] }); }
+            else { playSound('mild-success'); }
+        } else if (stars > 0 && !currentIsSightReading) {
+            setComboCount(0); 
+            playSound('mild-success'); 
+        } else {
+            setComboCount(0); 
+            playSound('try-again');
+        }
 
         setResult({ accuracy: Math.round(accuracy * 100), stars, matchedChars });
       };
 
       const handleNext = () => {
         playSound('pop'); if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        setRecognizedText(''); setResult(null); setErrorMsg(''); setCurrentSentenceIndex(prev => prev + 1);
+        setRecognizedText(''); setResult(null); setErrorMsg(''); setCurrentSentenceIndex(prev => prev + 1); setHasUsedHint(false);
       };
 
-      const handleSkip = () => {
+      const handleTeacherHelp = () => {
         playSound('pop');
-        if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); const ut = new SpeechSynthesisUtterance(targetSentenceObj.text); ut.lang = 'zh-TW'; ut.rate = 0.85; window.speechSynthesis.speak(ut); }
-        setRecognizedText(t.teacherPassed); setSessionStars(prev => prev + 1); 
-        let fake = targetSentenceObj.text.split('').map((c, i) => ({ char: c, zhuyin: targetSentenceObj.zhuyin[i], isPunc: /[，。、！？；：「」『』\s]/.test(c), isCorrect: true }));
-        setResult({ accuracy: 100, stars: 1, matchedChars: fake });
-        if (currentSentenceIndex === totalSentences - 1) playSound('level-clear'); else playSound('mild-success');
+        setHasUsedHint(true);
+        setComboCount(0); 
+        setPhoneticMode(lang === 'zh' ? 'zhuyin' : 'pinyin');
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(getTtsText(targetSentenceObj.text));
+          utterance.lang = 'zh-TW';
+          utterance.rate = 0.85;
+          window.speechSynthesis.speak(utterance);
+        }
+      };
+
+      const handleSightReadingRetry = () => {
+        playSound('pop');
+        setResult(null);
+        setPhoneticMode('none');
+        setHasUsedHint(false);
+        setRecognizedText('');
       };
 
       const finishLesson = () => {
         playSound('pop'); setIsFlyingAway(true); 
+        saveScoreToFirebase(sessionStars);
         confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#FFB020', '#FF5252', '#4CAF50', '#2196F3', '#9C27B0'] });
         setTimeout(() => { confetti({ particleCount: 300, spread: 150, origin: { y: 0.4 }, colors: ['#FFB020', '#FF5252', '#4CAF50', '#2196F3', '#9C27B0'] }); }, 1200);
         setTimeout(() => setShowSuccessScreen(true), 3200); 
+      };
+
+      const handlePlayAgain = () => {
+        playSound('pop');
+        setCurrentSentenceIndex(0);
+        setRecognizedText('');
+        setResult(null);
+        setIsFlyingAway(false);
+        setShowSuccessScreen(false);
+        setSessionStars(0);
+        setHasUsedHint(false);
+        setTotalAttempts(0); 
+        setComboCount(0);
       };
 
       const scrollLessons = (direction) => {
@@ -463,10 +640,91 @@
         document.body.removeChild(textArea);
       };
 
+      const LeaderboardModal = () => (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-fade-in-up border-4 border-yellow-400 flex flex-col max-h-[85vh]">
+            <div className="bg-gradient-to-r from-yellow-400 to-orange-400 p-4 text-white flex justify-between items-center shrink-0">
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                <Trophy className="w-6 h-6 sm:w-8 sm:h-8" />
+                <select 
+                  className="bg-white text-orange-500 font-bold rounded-full px-2 py-1 outline-none cursor-pointer text-sm sm:text-base shadow-sm border-2 border-yellow-200"
+                  value={leaderboardLesson.id}
+                  onChange={(e) => {
+                    playSound('pop');
+                    const lesson = LESSONS.find(l => l.id === e.target.value);
+                    setLeaderboardLesson(lesson);
+                  }}
+                >
+                  {LESSONS.map(l => (
+                    <option key={l.id} value={l.id}>
+                      {lang === 'zh' ? `${l.id} ${l.title.split('：')[1]}` : l.titleEn}
+                    </option>
+                  ))}
+                </select>
+              </h2>
+              <button onClick={() => {playSound('pop'); setShowLeaderboard(false);}} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+                <XIcon className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto flex-1 bg-yellow-50/30">
+              {leaderboardData.length === 0 ? (
+                <div className="text-center text-gray-400 py-10 font-medium">{t.noData}</div>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="text-gray-500 text-sm border-b-2 border-gray-200">
+                      <th className="pb-2 text-center w-10 sm:w-12">{t.rank}</th>
+                      <th className="pb-2 pl-2">{t.name}</th>
+                      <th className="pb-2 text-center whitespace-nowrap">{t.score}</th>
+                      <th className="pb-2 text-center text-xs sm:text-sm whitespace-nowrap">{t.practiceStat}</th>
+                      <th className="pb-2 text-center text-xs sm:text-sm hidden sm:table-cell whitespace-nowrap">{t.lastUpdate}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboardData.map((record, index) => (
+                      <tr key={`${record.id}-${index}`} className="border-b border-gray-100 hover:bg-orange-50 transition-colors">
+                        <td className="py-3 text-center">
+                          {index === 0 ? <span className="text-2xl">🥇</span> : 
+                           index === 1 ? <span className="text-2xl">🥈</span> : 
+                           index === 2 ? <span className="text-2xl">🥉</span> : 
+                           <span className="text-gray-400 font-bold">{index + 1}</span>}
+                        </td>
+                        <td className="py-3 pl-2 font-bold text-gray-700 whitespace-nowrap">
+                          <span className="text-lg sm:text-xl mr-1">{record.avatar}</span> <span className="text-sm sm:text-base">{record.name}</span>
+                        </td>
+                        <td className="py-3 text-center font-bold text-orange-500">
+                          <div className="flex justify-center items-center gap-1">
+                            {record.bestScore} <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
+                          </div>
+                        </td>
+                        <td className="py-3 text-center whitespace-nowrap">
+                          <div className="text-xs sm:text-sm font-bold text-pink-500">🔥 {record.daysCount} 天</div>
+                          <div className="text-[10px] sm:text-xs text-gray-400 mt-0.5">🔄 {record.totalTries} 次</div>
+                        </td>
+                        <td className="py-3 text-center text-xs text-gray-500 hidden sm:table-cell">
+                          {record.lastUpdate}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="p-4 bg-gray-50 border-t border-gray-100 text-center shrink-0">
+              <button onClick={() => {playSound('pop'); setShowLeaderboard(false);}} className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-full font-bold transition-colors">
+                關閉
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+
       if (!studentName) {
         return (
           <div className="min-h-[100dvh] bg-gradient-to-b from-[#FFF5E1] to-[#FFE4B5] bg-polka p-0 sm:p-4 flex flex-col items-center justify-center relative overflow-hidden">
-            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
+            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50 flex gap-2">
+              <button onClick={() => {playSound('pop'); setShowLeaderboard(true);}} className="flex items-center gap-1.5 px-4 py-2 bg-yellow-400 text-white rounded-full font-medium shadow-[0_4px_0_0_#ca8a04] hover:translate-y-[-2px] hover:shadow-[0_6px_0_0_#ca8a04] active:translate-y-[4px] active:shadow-none transition-all"><Trophy className="w-5 h-5" /> {t.leaderboard}</button>
               <button onClick={toggleLanguage} className="flex items-center gap-1.5 px-4 py-2 bg-white/80 hover:bg-white text-orange-500 rounded-full font-medium shadow-[0_4px_0_0_#fbd38d] hover:translate-y-[-2px] hover:shadow-[0_6px_0_0_#fbd38d] active:translate-y-[4px] active:shadow-none transition-all border-2 border-orange-200"><Globe className="w-5 h-5" /> {lang === 'zh' ? 'EN' : '中'}</button>
             </div>
             
@@ -475,31 +733,22 @@
               <Sparkles className="absolute bottom-6 right-6 w-12 h-12 text-yellow-300 opacity-80 animate-pulse hidden sm:block" style={{ animationDelay: '1s' }} />
               
               <div className="flex justify-center mb-3 sm:mb-5 animate-gentle-bounce">
-                <div className="bg-gradient-to-tr from-orange-100 to-yellow-50 p-4 sm:p-5 rounded-full border-4 border-white shadow-lg">
-                  <Award className="w-12 h-12 sm:w-16 sm:h-16 text-orange-400" />
+                <div className="bg-gradient-to-tr from-orange-100 to-yellow-50 p-4 sm:p-5 rounded-full border-4 border-white shadow-lg text-4xl">
+                  {selectedAvatar}
                 </div>
               </div>
               
               <h1 className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-pink-500 tracking-wider mb-2 drop-shadow-sm">{t.appTitle}</h1>
               <p className="text-orange-400 font-normal mb-5 sm:mb-6 tracking-widest text-sm sm:text-lg">{t.appSubtitle}</p>
               
-              <div className="flex flex-col gap-3 mb-6 relative z-10 w-full mx-auto">
-                <div className="bg-orange-50/80 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 text-left border-4 border-white shadow-md">
-                  <h3 className="font-bold text-orange-500 mb-3 text-sm sm:text-base flex items-center justify-center gap-1.5"><HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-pink-400" /> {t.tipsTitle}</h3>
-                  <ul className="text-xs sm:text-sm text-gray-600 space-y-2.5 font-normal">
-                    <li className="flex items-center gap-2.5"><div className="bg-white p-1.5 sm:p-2 rounded-full shadow-sm shrink-0 border-2 border-orange-100"><Mic className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400"/></div><span>{t.tip1}</span></li>
-                    <li className="flex items-center gap-2.5"><div className="bg-white p-1.5 sm:p-2 rounded-full shadow-sm shrink-0 border-2 border-yellow-100"><Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 fill-yellow-400"/></div><span>{t.tip2}</span></li>
-                    <li className="flex items-center gap-2.5"><div className="bg-white p-1.5 sm:p-2 rounded-full shadow-sm shrink-0 flex items-center justify-center w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] border-2 border-pink-100"><span className="text-xs sm:text-lg">🦋</span></div><span>{t.tip3}</span></li>
-                  </ul>
-                </div>
-                
-                <div className="bg-red-50/90 rounded-[1.5rem] p-3 sm:p-4 text-center border-2 border-red-200 shadow-sm">
-                  <h3 className="font-bold text-red-500 mb-2 text-xs sm:text-sm flex items-center justify-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400" /> {t.micNoticeTitle}
-                  </h3>
-                  <p className="text-[11px] sm:text-xs text-gray-700 font-bold mb-1">{t.micNotice1}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-600 font-normal">{t.micNotice2}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-600 font-normal">{t.micNotice3}</p>
+              <div className="mb-6 relative z-10 shrink-0 bg-orange-50 p-4 rounded-[1.5rem] border-2 border-orange-100">
+                <p className="text-sm font-bold text-orange-500 mb-3 text-center">{t.chooseAvatar}</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {AVATARS.map(a => (
+                    <button key={a} onClick={() => setSelectedAvatar(a)} className={`text-2xl sm:text-3xl p-2 rounded-full transition-all duration-300 ${selectedAvatar === a ? 'bg-orange-200 scale-125 border-2 border-orange-400 shadow-sm' : 'hover:scale-110 opacity-70 hover:opacity-100'}`}>
+                      {a}
+                    </button>
+                  ))}
                 </div>
               </div>
               
@@ -509,6 +758,8 @@
               </div>
               <button disabled={!tempName.trim()} onClick={() => { setStudentName(tempName.trim()); playSound('pop'); }} className="w-full bg-gradient-to-b from-orange-400 to-orange-500 text-white font-bold text-xl sm:text-3xl py-4 sm:py-5 rounded-full shadow-[0_6px_0_0_#ea580c] hover:translate-y-[-2px] hover:shadow-[0_8px_0_0_#ea580c] active:translate-y-[6px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-auto sm:mt-0 relative z-10 shrink-0">{t.startBtn}</button>
             </div>
+            
+            {showLeaderboard && <LeaderboardModal />}
           </div>
         );
       }
@@ -516,31 +767,64 @@
       if (showSuccessScreen) {
         return (
           <div className="min-h-[100dvh] bg-gradient-to-b from-[#E0F7FA] to-[#E6E6FA] bg-polka p-0 sm:p-4 flex flex-col items-center justify-center relative overflow-hidden">
-            <div className="bg-white/95 backdrop-blur-sm rounded-none sm:rounded-[3rem] shadow-[0_20px_50px_-12px_rgba(6,182,212,0.3)] p-8 md:p-16 w-full max-w-2xl h-[100dvh] sm:h-auto flex flex-col justify-center text-center relative overflow-hidden sm:border-[8px] border-white animate-fade-in-up safe-paddings z-10">
+            <div className="bg-white/95 backdrop-blur-sm rounded-none sm:rounded-[3rem] shadow-[0_20px_50px_-12px_rgba(6,182,212,0.3)] p-6 md:p-12 w-full max-w-3xl h-[100dvh] sm:h-auto flex flex-col justify-center text-center relative overflow-hidden sm:border-[8px] border-white animate-fade-in-up safe-paddings z-10">
               <div className="absolute inset-0 bg-cyan-50 opacity-50 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-100/40 to-transparent"></div>
-              <div className="text-[6rem] sm:text-[8rem] animate-gentle-bounce mb-6 relative z-10 drop-shadow-xl" style={{ animationDuration: '2s' }}>🦋</div>
-              <h2 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-500 mb-6 relative z-10 tracking-widest drop-shadow-sm">{t.successTitle}</h2>
-              <div className="text-xl sm:text-2xl md:text-3xl text-gray-500 font-normal mb-8 leading-loose relative z-10">{t.congrats} <span className="text-pink-500 text-3xl sm:text-4xl md:text-5xl mx-2 font-bold">{studentName}</span> <br className="hidden sm:block"/><span className="sm:hidden"> </span>{t.completed}<br/><span className="text-cyan-600 inline-block mt-4 bg-cyan-50 px-6 py-3 rounded-full border-4 border-white shadow-sm font-bold">{lang === 'zh' ? selectedLesson.title : selectedLesson.titleEn}</span></div>
-              <div className="flex justify-center items-center gap-3 mb-10 relative z-10 bg-yellow-50 px-8 py-4 rounded-full border-4 border-white shadow-md inline-flex mx-auto transform rotate-2"><Star className="w-10 h-10 text-yellow-400 fill-yellow-400 animate-pulse" /><span className="text-2xl sm:text-3xl font-bold text-orange-500">{t.collectedStars.replace('{n}', sessionStars)}</span></div>
-              <br/><button onClick={() => { playSound('pop'); setCurrentSentenceIndex(0); setRecognizedText(''); setResult(null); setIsFlyingAway(false); setShowSuccessScreen(false); setSessionStars(0); }} className="px-8 sm:px-12 py-4 sm:py-5 bg-gradient-to-b from-cyan-400 to-cyan-500 text-white rounded-full font-bold text-xl sm:text-2xl shadow-[0_6px_0_0_#0891b2] hover:translate-y-[-2px] hover:shadow-[0_8px_0_0_#0891b2] active:translate-y-[6px] active:shadow-none transition-all relative z-10 inline-block mt-auto sm:mt-0">{t.tryAnother}</button>
+              <div className="text-[5rem] sm:text-[7rem] animate-gentle-bounce mb-4 relative z-10 drop-shadow-xl" style={{ animationDuration: '2s' }}>{selectedAvatar}</div>
+              <h2 className="text-3xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-500 mb-6 relative z-10 tracking-widest drop-shadow-sm">{t.successTitle}</h2>
+              <div className="text-lg sm:text-2xl md:text-3xl text-gray-500 font-normal mb-6 leading-loose relative z-10">{t.congrats} <span className="text-pink-500 text-2xl sm:text-4xl md:text-5xl mx-2 font-bold">{studentName}</span> <br className="hidden sm:block"/><span className="sm:hidden"> </span>{t.completed}<br/><span className="text-cyan-600 inline-block mt-4 bg-cyan-50 px-6 py-2 rounded-full border-4 border-white shadow-sm font-bold text-base sm:text-xl">{lang === 'zh' ? selectedLesson.title : selectedLesson.titleEn}</span></div>
+              <div className="flex justify-center items-center gap-2 mb-8 relative z-10 bg-yellow-50 px-6 py-3 rounded-full border-4 border-white shadow-md inline-flex mx-auto transform rotate-2"><Star className="w-8 h-8 text-yellow-400 fill-yellow-400 animate-pulse" /><span className="text-2xl sm:text-3xl font-bold text-orange-500">{t.collectedStars.replace('{n}', sessionStars)}</span></div>
+              
+              <div className="flex flex-col sm:flex-row flex-wrap gap-4 relative z-10 justify-center w-full mt-auto sm:mt-0 px-2">
+                <button onClick={handlePlayAgain} className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-b from-green-400 to-green-500 text-white rounded-full font-bold text-base sm:text-xl shadow-[0_6px_0_0_#16a34a] hover:translate-y-[-2px] hover:shadow-[0_8px_0_0_#16a34a] active:translate-y-[6px] active:shadow-none transition-all flex items-center justify-center gap-2">
+                  <RefreshCw className="w-5 h-5" /> {t.playAgain}
+                </button>
+                <button onClick={() => { playSound('pop'); setShowLeaderboard(true); }} className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-b from-yellow-400 to-yellow-500 text-white rounded-full font-bold text-base sm:text-xl shadow-[0_6px_0_0_#ca8a04] hover:translate-y-[-2px] hover:shadow-[0_8px_0_0_#ca8a04] active:translate-y-[6px] active:shadow-none transition-all flex items-center justify-center gap-2">
+                  <Trophy className="w-5 h-5" /> {t.leaderboard}
+                </button>
+                <button onClick={() => { playSound('pop'); setCurrentSentenceIndex(0); setRecognizedText(''); setResult(null); setIsFlyingAway(false); setShowSuccessScreen(false); setSessionStars(0); }} className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-b from-cyan-400 to-cyan-500 text-white rounded-full font-bold text-base sm:text-xl shadow-[0_6px_0_0_#0891b2] hover:translate-y-[-2px] hover:shadow-[0_8px_0_0_#0891b2] active:translate-y-[6px] active:shadow-none transition-all flex items-center justify-center gap-2">
+                  <ListIcon className="w-5 h-5" /> {t.tryAnother}
+                </button>
+              </div>
             </div>
+            {showLeaderboard && <LeaderboardModal />}
           </div>
         );
       }
 
+      const isSightReading = phoneticMode === 'none' && !hasUsedHint;
+      const needsHanziChallenge = result && result.stars > 0 && !isSightReading;
+
       return (
         <div className="min-h-[100dvh] bg-gradient-to-b from-[#FFF5E1] to-[#FFE4B5] bg-polka p-0 sm:p-4 md:p-8 flex flex-col items-center relative overflow-hidden">
+          
+          {/* 🌟 渲染 Combo 動畫特效 */}
+          {showComboAnimation && (
+            <div className="absolute top-1/3 left-1/2 z-[60] animate-combo pointer-events-none drop-shadow-2xl">
+              <div className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-red-500 via-orange-400 to-yellow-400 italic" style={{ WebkitTextStroke: '2px white' }}>
+                {comboCount} COMBO! 🔥
+              </div>
+            </div>
+          )}
+
           <header className="w-full max-w-4xl bg-white/95 backdrop-blur-sm sm:rounded-[2.5rem] shadow-[0_10px_30px_-10px_rgba(251,146,60,0.2)] p-4 sm:p-6 mb-3 sm:mb-8 text-center border-b-[6px] sm:border-[6px] border-white relative overflow-hidden group shrink-0 pt-safe z-10">
             <Sparkles className="absolute -top-4 -left-4 w-16 h-16 text-yellow-300 opacity-60 group-hover:rotate-12 transition-transform" /><Sparkles className="absolute -bottom-4 -right-4 w-16 h-16 text-yellow-300 opacity-60 group-hover:-rotate-12 transition-transform" />
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-orange-500 flex items-center justify-center gap-2 sm:gap-3 relative z-10 drop-shadow-sm"><Award className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400 animate-bounce" style={{ animationDuration: '2s' }} /> {t.appTitle} <Award className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400 animate-bounce" style={{ animationDuration: '2.5s' }} /></h1>
-            <p className="text-gray-400 mt-1 sm:mt-2 text-sm sm:text-lg relative z-10 font-normal">{lang === 'zh' ? `${t.littleCaterpillar} ` : ''}<span className="text-pink-400 font-bold">{studentName}</span>{lang === 'en' ? '' : ' '}{t.readingChallenge}</p>
+            <p className="text-gray-400 mt-1 sm:mt-2 text-sm sm:text-lg relative z-10 font-normal flex items-center justify-center gap-1">
+              <span className="text-xl">{selectedAvatar}</span><span className="text-pink-400 font-bold ml-1">{studentName}</span> {t.readingChallenge}
+            </p>
             <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-6 md:right-6 flex flex-col gap-2 z-20 items-end">
+              
               <div className="flex gap-2">
-                <button onClick={toggleFullScreen} className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all sm:w-28 ${isFullscreen ? 'bg-purple-400 text-white shadow-[0_4px_0_0_#9333ea] border-2 border-purple-500' : 'bg-white text-purple-500 shadow-[0_4px_0_0_#e9d5ff] hover:translate-y-[-2px] border-2 border-purple-200'}`} title={t.fullscreen}><Maximize className="w-3 h-3 sm:w-4 sm:h-4" /><span className="hidden sm:inline">{t.fullscreen}</span></button>
-                <button onClick={() => { playSound('pop'); setShowZhuyin(!showZhuyin); }} className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all sm:w-32 ${showZhuyin ? 'bg-orange-400 text-white shadow-[0_4px_0_0_#ea580c] border-2 border-orange-500' : 'bg-white text-orange-500 shadow-[0_4px_0_0_#fed7aa] hover:translate-y-[-2px] border-2 border-orange-200'}`}><Type className="w-3 h-3 sm:w-4 sm:h-4" /><span className="hidden sm:inline">{showZhuyin ? t.hideZhuyin : t.showZhuyin}</span><span className="sm:hidden">{showZhuyin ? t.hideMobile : t.zhuyinMobile}</span></button>
+                <button onClick={() => { playSound('pop'); setHasUsedHint(true); setPhoneticMode(prev => prev === 'zhuyin' ? 'none' : 'zhuyin'); setComboCount(0); }} className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all sm:w-24 ${phoneticMode === 'zhuyin' ? 'bg-orange-400 text-white shadow-[0_4px_0_0_#ea580c] border-2 border-orange-500' : 'bg-white text-orange-500 shadow-[0_4px_0_0_#fed7aa] hover:translate-y-[-2px] border-2 border-orange-200'}`}>
+                  <Type className="w-3 h-3 sm:w-4 sm:h-4" /><span>{phoneticMode === 'zhuyin' ? t.hideBtn : t.zhuyinBtn}</span>
+                </button>
+                <button onClick={() => { playSound('pop'); setHasUsedHint(true); setPhoneticMode(prev => prev === 'pinyin' ? 'none' : 'pinyin'); setComboCount(0); }} className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all sm:w-24 ${phoneticMode === 'pinyin' ? 'bg-blue-400 text-white shadow-[0_4px_0_0_#2563eb] border-2 border-blue-500' : 'bg-white text-blue-500 shadow-[0_4px_0_0_#bfdbfe] hover:translate-y-[-2px] border-2 border-blue-200'}`}>
+                  <Type className="w-3 h-3 sm:w-4 sm:h-4" /><span>{phoneticMode === 'pinyin' ? t.hideBtn : t.pinyinBtn}</span>
+                </button>
               </div>
+
               <div className="flex gap-2 w-full sm:w-auto justify-end mt-1 sm:mt-0">
-                <button onClick={toggleLanguage} className="flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all bg-white text-pink-500 shadow-[0_4px_0_0_#fbcfe8] hover:translate-y-[-2px] border-2 border-pink-200"><Globe className="w-3 h-3 sm:w-4 sm:h-4" /><span>{lang === 'zh' ? 'EN' : '中'}</span></button>
+                <button onClick={() => { playSound('pop'); setShowLeaderboard(true); }} className="flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all bg-yellow-400 text-white shadow-[0_4px_0_0_#ca8a04] hover:translate-y-[-2px] border-2 border-yellow-500"><Trophy className="w-3 h-3 sm:w-4 sm:h-4" /><span>{t.leaderboard}</span></button>
                 <button onClick={copyLessonLink} className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all sm:w-auto sm:px-5 ${copySuccess ? 'bg-green-400 text-white shadow-[0_4px_0_0_#16a34a] border-2 border-green-500' : 'bg-white text-blue-500 shadow-[0_4px_0_0_#bfdbfe] hover:translate-y-[-2px] border-2 border-blue-200'}`} title={t.copyLink}>{copySuccess && <span className="flex items-center gap-1"><Check className="w-3 h-3 sm:w-4 sm:h-4" /> {t.copied}</span>}{!copySuccess && <span className="flex items-center gap-1"><LinkIcon className="w-3 h-3 sm:w-4 sm:h-4" /> {t.copyLink}</span>}</button>
               </div>
             </div>
@@ -551,7 +835,7 @@
               <button onClick={() => scrollLessons('left')} className="absolute left-0 top-1/2 -translate-y-1/2 -mt-2 bg-white p-2 rounded-full shadow-[0_4px_0_0_#fed7aa] active:translate-y-[4px] active:shadow-none z-10 hover:bg-orange-50 hidden md:block border-2 border-orange-100"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
               <div ref={lessonListRef} className="flex overflow-x-auto pb-4 gap-3 sm:gap-4 scrollbar-hide snap-x px-4 sm:px-12 mx-0 md:mx-6">
                 {LESSONS.map((lesson) => (
-                  <button key={lesson.id} onClick={() => { playSound('pop'); setSelectedLesson(lesson); }} className={`whitespace-nowrap px-5 py-3 rounded-2xl text-sm sm:text-base font-medium transition-all snap-start flex-shrink-0 ${selectedLesson.id === lesson.id ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-white shadow-[0_6px_0_0_#ea580c] transform -translate-y-1 border-2 border-orange-400' : 'bg-white text-gray-500 shadow-[0_4px_0_0_#e5e7eb] hover:translate-y-[-2px] border-2 border-gray-100'}`}>{lang === 'zh' ? `${lesson.id} ${lesson.title.split('：')[1]}` : lesson.titleEn}</button>
+                  <button key={lesson.id} onClick={() => { playSound('pop'); setSelectedLesson(lesson); setLeaderboardLesson(lesson); }} className={`whitespace-nowrap px-5 py-3 rounded-2xl text-sm sm:text-base font-medium transition-all snap-start flex-shrink-0 ${selectedLesson.id === lesson.id ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-white shadow-[0_6px_0_0_#ea580c] transform -translate-y-1 border-2 border-orange-400' : 'bg-white text-gray-500 shadow-[0_4px_0_0_#e5e7eb] hover:translate-y-[-2px] border-2 border-gray-100'}`}>{lang === 'zh' ? `${lesson.id} ${lesson.title.split('：')[1]}` : lesson.titleEn}</button>
                 ))}
               </div>
               <button onClick={() => scrollLessons('right')} className="absolute right-0 top-1/2 -translate-y-1/2 -mt-2 bg-white p-2 rounded-full shadow-[0_4px_0_0_#fed7aa] active:translate-y-[4px] active:shadow-none z-10 hover:bg-orange-50 hidden md:block border-2 border-orange-100"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg></button>
@@ -566,12 +850,12 @@
                   <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-300 to-green-400 rounded-full" style={{ width: `${progressPercentage}%`, ...springTransition }} />
                   {selectedLesson.sentences.map((_, idx) => {
                     const positionPercentage = ((idx + 1) / totalSentences) * 100;
-                    const nodes = ['🍎', '🍐', '🍑', '🍓', '🍊', '🍰', '🍦', '🥒', '🧀', '🌭', '🍭', '🍒', '🧁', '🍉', '🍃'];
-                    const emoji = idx === totalSentences - 1 ? '🦋' : (idx === totalSentences - 2 ? '🏠' : nodes[idx % nodes.length]);
+                    const nodes = ['💎', '🔮', '🌟', '⚡', '🪙', '✨'];
+                    const emoji = idx === totalSentences - 1 ? '🏆' : nodes[idx % nodes.length];
                     return (<div key={idx} className={`absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 text-2xl sm:text-3xl transition-all duration-500 ${idx === totalSentences - 1 && effectiveProgress !== totalSentences ? 'animate-pulse' : ''}`} style={{ left: `${positionPercentage}%`, opacity: effectiveProgress > idx ? 0 : 1, zIndex: 5 }}>{emoji}</div>);
                   })}
                   <div className="absolute top-1/2 z-50" style={{ left: `${progressPercentage}%`, transform: 'translate(-50%, -50%)', zIndex: isFlyingAway ? 9999 : 50, ...springTransition }}>
-                    <div className="transition-all duration-1000 origin-center drop-shadow-lg text-3xl sm:text-4xl" style={ isFlyingAway ? { animation: 'flyAwayCenter 3s ease-in-out forwards' } : { transform: effectiveProgress === totalSentences ? 'scale(1.5)' : effectiveProgress === totalSentences - 1 ? 'scale(1.3)' : `scaleX(-${1 + effectiveProgress * 0.15}) scaleY(${1 + effectiveProgress * 0.15})`, animation: effectiveProgress === totalSentences ? 'fly 2s infinite alternate ease-in-out' : 'none' }}>{effectiveProgress === totalSentences ? '🦋' : effectiveProgress === totalSentences - 1 ? '🏠' : '🐛'}</div>
+                    <div className="transition-all duration-1000 origin-center drop-shadow-lg text-3xl sm:text-4xl" style={ isFlyingAway ? { animation: 'flyAwayCenter 3s ease-in-out forwards' } : { transform: effectiveProgress === totalSentences ? 'scale(1.5)' : `scaleX(-${1 + effectiveProgress * 0.15}) scaleY(${1 + effectiveProgress * 0.15})`, animation: effectiveProgress === totalSentences ? 'fly 2s infinite alternate ease-in-out' : 'none' }}>{effectiveProgress === totalSentences ? '🏆' : selectedAvatar}</div>
                   </div>
                 </div>
                 <div className="text-green-500 font-bold mt-5 tracking-widest text-xs sm:text-sm bg-green-50 inline-block px-4 py-1.5 rounded-full">{t.progress} {effectiveProgress} / {totalSentences}</div>
@@ -585,7 +869,7 @@
                     {t.clickToHear}
                   </div>
                   {!result && (
-                    <button onClick={handleSkip} className="flex items-center justify-center gap-1.5 sm:gap-2 bg-white text-blue-500 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-medium transition-all shadow-[0_4px_0_0_#bfdbfe] hover:translate-y-[-2px] hover:shadow-[0_6px_0_0_#bfdbfe] active:translate-y-[4px] active:shadow-none border-2 border-blue-200">
+                    <button onClick={handleTeacherHelp} className="flex items-center justify-center gap-1.5 sm:gap-2 bg-white text-blue-500 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-medium transition-all shadow-[0_4px_0_0_#bfdbfe] hover:translate-y-[-2px] hover:shadow-[0_6px_0_0_#bfdbfe] active:translate-y-[4px] active:shadow-none border-2 border-blue-200">
                       <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" /> {t.teacherHelp}
                     </button>
                   )}
@@ -594,11 +878,20 @@
                   {result ? result.matchedChars.map((item, idx) => (
                     <ruby key={idx} className="mx-[4px] sm:mx-[6px] transition-all duration-300 transform hover:scale-110">
                       <span className={`${item.isPunc ? 'text-gray-400' : (item.isCorrect ? 'text-green-500 drop-shadow-sm' : 'text-red-500 opacity-80')}`}>{item.char}</span>
-                      {showZhuyin && !item.isPunc && (<rt className={`text-base sm:text-xl font-normal font-sans tracking-tighter mb-1 sm:mb-2 ${item.isCorrect ? 'text-green-500' : 'text-red-400'}`}>{item.zhuyin}</rt>)}
+                      {phoneticMode === 'zhuyin' && !item.isPunc && (<rt className={`text-base sm:text-xl font-normal font-sans tracking-tighter mb-1 sm:mb-2 ${item.isCorrect ? 'text-green-500' : 'text-red-400'}`}>{item.zhuyin}</rt>)}
+                      {phoneticMode === 'pinyin' && !item.isPunc && (<rt className={`text-sm sm:text-base font-normal font-sans tracking-tighter mb-1 sm:mb-2 ${item.isCorrect ? 'text-green-500' : 'text-red-400'}`}>{item.pinyin}</rt>)}
                     </ruby>
                   )) : targetSentenceObj.text.split('').map((char, idx) => {
-                    const zhuyin = targetSentenceObj.zhuyin[idx]; const isPunc = /[，。、！？；：「」『』\s]/.test(char);
-                    return (<ruby key={idx} onClick={() => playSingleCharSpeech(char)} className={`mx-[4px] sm:mx-[6px] transition-all duration-300 ${!isPunc ? 'cursor-pointer hover:bg-orange-100 rounded-xl p-1 sm:p-2 group active:scale-95' : ''}`} title={!isPunc ? t.clickToHearMobile : ''}><span className={isPunc ? "text-gray-400" : "text-gray-800 group-hover:text-orange-500"}>{char}</span>{showZhuyin && !isPunc && (<rt className="text-base sm:text-xl text-orange-500 font-normal font-sans tracking-tighter mb-1 sm:mb-2">{zhuyin}</rt>)}</ruby>);
+                    const zhuyin = targetSentenceObj.zhuyin[idx]; 
+                    const pinyin = targetSentenceObj.pinyin[idx]; 
+                    const isPunc = /[，。、！？；：「」『』\s]/.test(char);
+                    return (
+                      <ruby key={idx} onClick={() => playSingleCharSpeech(char)} className={`mx-[4px] sm:mx-[6px] transition-all duration-300 ${!isPunc ? 'cursor-pointer hover:bg-orange-100 rounded-xl p-1 sm:p-2 group active:scale-95' : ''}`} title={!isPunc ? t.clickToHearMobile : ''}>
+                        <span className={isPunc ? "text-gray-400" : "text-gray-800 group-hover:text-orange-500"}>{char}</span>
+                        {phoneticMode === 'zhuyin' && !isPunc && (<rt className="text-base sm:text-xl text-orange-500 font-normal font-sans tracking-tighter mb-1 sm:mb-2">{zhuyin}</rt>)}
+                        {phoneticMode === 'pinyin' && !isPunc && (<rt className="text-sm sm:text-base text-blue-500 font-normal font-sans tracking-tighter mb-1 sm:mb-2">{pinyin}</rt>)}
+                      </ruby>
+                    );
                   })}
                 </div>
               </div>
@@ -610,10 +903,10 @@
             </div>
           </main>
 
-          {/* 獨立彈出的星星結算畫面 */}
+          {/* 🌟 獨立彈出的星星結算畫面 (已改為置中顯示) */}
           {result && !isRecording && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 pb-8 sm:pb-12 bg-gray-900/20 transition-opacity duration-300">
-              <div className="bg-white/95 backdrop-blur-none rounded-[2.5rem] p-6 sm:p-8 max-w-md w-full text-center shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] animate-fade-in-up border-[6px] sm:border-[8px] border-white relative mt-auto">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/20 transition-opacity duration-300">
+              <div className="bg-white/95 backdrop-blur-none rounded-[2.5rem] p-6 sm:p-8 max-w-md w-full text-center shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] animate-fade-in-up border-[6px] sm:border-[8px] border-white relative">
                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-yellow-100 p-3 rounded-full border-4 border-white shadow-md animate-gentle-bounce">
                   <Star className="w-8 h-8 text-yellow-500 fill-yellow-500" />
                 </div>
@@ -625,25 +918,35 @@
                   ))}
                 </div>
                 <p className={`text-xl sm:text-2xl font-bold mb-6 sm:mb-8 px-2 ${result.stars === 3 ? 'text-green-500' : 'text-orange-500'}`}>
-                  {result.stars === 3 ? t.perfect : result.stars === 2 ? t.good : t.tryAgainMsg}
+                  {needsHanziChallenge ? t.requireSightReadingMsg : (result.stars === 3 ? t.perfect : result.stars === 2 ? t.good : t.tryAgainMsg)}
                 </p>
-                <div className="flex flex-row justify-center gap-2 sm:gap-4 px-1 sm:px-0">
-                  <button onClick={startRecording} disabled={isFlyingAway} className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-4 bg-white text-gray-500 rounded-full font-medium transition-all text-sm sm:text-xl whitespace-nowrap shadow-[0_4px_0_0_#e5e7eb] hover:translate-y-[-2px] border-2 border-gray-100 disabled:opacity-50">
-                    <RefreshCw className="w-4 h-4 sm:w-6 sm:h-6" /> {t.tryAgainBtn}
-                  </button>
-                  {currentSentenceIndex < totalSentences - 1 ? (
-                    <button onClick={handleNext} className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-4 bg-gradient-to-b from-green-400 to-green-500 text-white rounded-full font-medium transition-all text-sm sm:text-xl whitespace-nowrap shadow-[0_4px_0_0_#16a34a] hover:translate-y-[-2px]">
-                      <Play className="w-4 h-4 sm:w-6 sm:h-6" fill="currentColor" /> {t.nextSentence}
+                <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 px-1 sm:px-0">
+                  {needsHanziChallenge ? (
+                    <button onClick={handleSightReadingRetry} className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-4 bg-gradient-to-b from-purple-400 to-purple-500 text-white rounded-full font-bold transition-all text-sm sm:text-xl whitespace-nowrap shadow-[0_4px_0_0_#9333ea] hover:translate-y-[-2px]">
+                      <RefreshCw className="w-4 h-4 sm:w-6 sm:h-6" /> {t.challengeHanzi}
                     </button>
                   ) : (
-                    <button onClick={finishLesson} disabled={isFlyingAway} className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-4 bg-gradient-to-b from-yellow-400 to-orange-400 text-white rounded-full font-medium transition-all text-sm sm:text-xl whitespace-nowrap shadow-[0_4px_0_0_#ea580c] hover:translate-y-[-2px] animate-bounce">
-                      <Award className="w-4 h-4 sm:w-6 sm:h-6" fill="currentColor" /> {t.finishLevel}
-                    </button>
+                    <React.Fragment>
+                      <button onClick={startRecording} disabled={isFlyingAway} className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-4 bg-white text-gray-500 rounded-full font-medium transition-all text-sm sm:text-xl whitespace-nowrap shadow-[0_4px_0_0_#e5e7eb] hover:translate-y-[-2px] border-2 border-gray-100 disabled:opacity-50">
+                        <RefreshCw className="w-4 h-4 sm:w-6 sm:h-6" /> {t.tryAgainBtn}
+                      </button>
+                      {currentSentenceIndex < totalSentences - 1 ? (
+                        <button onClick={handleNext} className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-4 bg-gradient-to-b from-green-400 to-green-500 text-white rounded-full font-medium transition-all text-sm sm:text-xl whitespace-nowrap shadow-[0_4px_0_0_#16a34a] hover:translate-y-[-2px]">
+                          <Play className="w-4 h-4 sm:w-6 sm:h-6" fill="currentColor" /> {t.nextSentence}
+                        </button>
+                      ) : (
+                        <button onClick={finishLesson} disabled={isFlyingAway} className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-4 bg-gradient-to-b from-yellow-400 to-orange-400 text-white rounded-full font-medium transition-all text-sm sm:text-xl whitespace-nowrap shadow-[0_4px_0_0_#ea580c] hover:translate-y-[-2px] animate-bounce">
+                          <Award className="w-4 h-4 sm:w-6 sm:h-6" fill="currentColor" /> {t.finishLevel}
+                        </button>
+                      )}
+                    </React.Fragment>
                   )}
                 </div>
               </div>
             </div>
           )}
+          
+          {showLeaderboard && <LeaderboardModal />}
         </div>
       );
     }
